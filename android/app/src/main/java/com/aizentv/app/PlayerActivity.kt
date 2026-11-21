@@ -72,7 +72,16 @@ class PlayerActivity : Activity() {
             }
         })
 
+        val previousProgress = mediaId
+            ?.takeIf { it.isNotBlank() }
+            ?.let { id -> LibraryStore.getProgress(this, id) }
+
         exoPlayer.setMediaItem(MediaItem.fromUri(uri))
+
+        if (previousProgress != null && previousProgress.positionMs > 0L) {
+            exoPlayer.seekTo(previousProgress.positionMs)
+        }
+
         exoPlayer.prepare()
         exoPlayer.playWhenReady = true
     }
