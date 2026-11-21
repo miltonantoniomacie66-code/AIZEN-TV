@@ -1,6 +1,8 @@
 package com.aizentv.app
 
 import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.graphics.Color
 import android.graphics.Typeface
@@ -244,13 +246,13 @@ class MainActivity : Activity() {
     }
 
     private fun buildExplore() {
-        content.addView(heading("Explorar"))
+        content.addView(heading("Explorar filmes"))
         content.addView(description(
-            "Pesquisa e descobre conteúdos por categoria."
+            "Descobre filmes com licenças abertas identificadas."
         ))
 
         val search = EditText(this).apply {
-            hint = "Pesquisar filmes, séries..."
+            hint = "Pesquisar filmes..."
             setHintTextColor(muted)
             setTextColor(white)
             textSize = 15f
@@ -258,52 +260,83 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(12), dp(16), dp(12))
             background = rounded(panel, 14)
         }
-        content.addView(search, LinearLayout.LayoutParams(-1, -2).apply {
-            bottomMargin = dp(18)
+
+        content.addView(search)
+
+        val searchButton = text(
+            "PESQUISAR FILMES", 13f, white, true
+        ).apply {
+            gravity = Gravity.CENTER
+            background = rounded(purple, 12)
+            setPadding(dp(16), dp(13), dp(16), dp(13))
+        }
+
+        content.addView(searchButton, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(10)
+            bottomMargin = dp(16)
         })
 
-        content.addView(text("Categorias", 17f, white, true).apply {
-            setPadding(0, 0, 0, dp(10))
-        })
-        addCategoryList()
+        val results = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        content.addView(results)
 
-        val result = card(
-            "Catálogo em preparação",
-            "Ainda não existem títulos ligados ao AIZEN TV. Quando adicionarmos fontes autorizadas, os resultados aparecerão aqui."
-        )
-        content.addView(result, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(20)
-        })
+        fun performSearch(query: String) {
+            results.removeAllViews()
+            results.addView(description("A pesquisar no catálogo..."))
 
-        search.addTextChangedListener(
-            object : android.text.TextWatcher {
-                override fun beforeTextChanged(
-                    s: CharSequence?, start: Int, count: Int, after: Int
-                ) {}
+            CatalogRepository.search(query) { response ->
+                results.removeAllViews()
 
-                override fun onTextChanged(
-                    s: CharSequence?, start: Int, before: Int, count: Int
-                ) {
-                    val query = s?.toString()?.trim().orEmpty()
-                    val message = if (query.isEmpty()) {
-                        "Ainda não existem títulos ligados ao AIZEN TV. Quando adicionarmos fontes autorizadas, os resultados aparecerão aqui."
+                response.onSuccess { items ->
+                    if (items.isEmpty()) {
+                        results.addView(card(
+                            "Nenhum filme encontrado",
+                            "Não encontrámos títulos com as licenças abertas que aceitamos."
+                        ))
                     } else {
-                        "Não há resultados locais para \"$query\". O catálogo será ligado numa próxima etapa."
-                    }
-                    result.removeAllViews()
-                    result.addView(text(
-                        if (query.isEmpty()) "Catálogo em preparação"
-                        else "Pesquisa: $query",
-                        16f, white, true
-                    ))
-                    result.addView(text(message, 13f, muted).apply {
-                        setPadding(0, dp(6), 0, 0)
-                    })
-                }
+                        results.addView(description(
+                            "${items.size} filmes encontrados"
+                        ))
 
-                override fun afterTextChanged(s: android.text.Editable?) {}
+                        items.forEach { item ->
+                            val movie = card(
+                                item.title,
+                                "${item.year} • ${item.creator}\n" +
+                                "Licença: ${item.licenseLabel}\n" +
+                                "Ver na fonte original →"
+                            )
+
+                            movie.setOnClickListener {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(item.sourceUrl)
+                                )
+                                startActivity(intent)
+                            }
+
+                            results.addView(
+                                movie,
+                                LinearLayout.LayoutParams(-1, -2).apply {
+                                    bottomMargin = dp(10)
+                                }
+                            )
+                        }
+                    }
+                }.onFailure {
+                    results.addView(card(
+                        "Não foi possível carregar",
+                        "Verifica a ligação à Internet e tenta novamente."
+                    ))
+                }
             }
-        )
+        }
+
+        searchButton.setOnClickListener {
+            performSearch(search.text.toString())
+        }
+
+        performSearch("")
     }
 
     private fun buildPlaceholder(title: String, subtitle: String) {
