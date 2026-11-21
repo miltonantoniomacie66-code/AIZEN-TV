@@ -46,11 +46,11 @@ jobs:
               echo "Commit: $GITHUB_SHA"
               echo "Execução: $GITHUB_RUN_ID"
               echo
-              if grep -q "FAILURE: Build failed" gradle-build.log; then
-                sed -n '/FAILURE: Build failed/,$p' gradle-build.log | tail -n 120
-              else
-                tail -n 120 gradle-build.log
-              fi
+              echo "===== ERROS KOTLIN ====="
+              grep -nE '(^e: |\\.kt:[0-9]+:[0-9]+|error:)' gradle-build.log | tail -n 80 || true
+              echo
+              echo "===== FINAL DO LOG ====="
+              tail -n 35 gradle-build.log
             } > build-diagnostics.txt
           fi
 
