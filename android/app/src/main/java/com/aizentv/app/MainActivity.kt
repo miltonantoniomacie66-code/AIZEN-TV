@@ -831,7 +831,9 @@ class MainActivity : Activity() {
             return Regex("[0-9]{4}").find(value)?.value == selectedYear
         }
 
-        fun addMovieSection(query: String, selectedYear: String) {
+        var searchGeneration = 0
+
+        fun addMovieSection(query: String, selectedYear: String, requestId: Int) {
             results.addView(heading("Filmes"))
             val section = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
@@ -839,7 +841,8 @@ class MainActivity : Activity() {
             results.addView(section)
             section.addView(description("A procurar filmes..."))
 
-            CatalogRepository.search(query) { response ->
+            CatalogRepository.search(query) callback@{ response ->
+                if (requestId != searchGeneration) return@callback
                 section.removeAllViews()
 
                 response.onSuccess { items ->
@@ -926,7 +929,8 @@ class MainActivity : Activity() {
         fun addDiscoverySection(
             category: String,
             query: String,
-            selectedYear: String
+            selectedYear: String,
+            requestId: Int
         ) {
             results.addView(heading(category))
             val section = LinearLayout(this).apply {
@@ -935,7 +939,8 @@ class MainActivity : Activity() {
             results.addView(section)
             section.addView(description("A procurar $category..."))
 
-            DiscoveryRepository.search(category, query) { response ->
+            DiscoveryRepository.search(category, query) callback@{ response ->
+                if (requestId != searchGeneration) return@callback
                 section.removeAllViews()
 
                 response.onSuccess { items ->
@@ -1024,6 +1029,8 @@ class MainActivity : Activity() {
         fun performSearch() {
             val query = search.text.toString().trim()
             val selectedYear = year.text.toString().trim()
+            searchGeneration++
+            val requestId = searchGeneration
 
             results.removeAllViews()
 
@@ -1037,13 +1044,13 @@ class MainActivity : Activity() {
             }
 
             when (selectedCategory) {
-                "Filmes" -> addMovieSection(query, selectedYear)
-                "Séries" -> addDiscoverySection("Séries", query, selectedYear)
-                "Anime" -> addDiscoverySection("Anime", query, selectedYear)
+                "Filmes" -> addMovieSection(query, selectedYear, requestId)
+                "Séries" -> addDiscoverySection("Séries", query, selectedYear, requestId)
+                "Anime" -> addDiscoverySection("Anime", query, selectedYear, requestId)
                 else -> {
-                    addMovieSection(query, selectedYear)
-                    addDiscoverySection("Séries", query, selectedYear)
-                    addDiscoverySection("Anime", query, selectedYear)
+                    addMovieSection(query, selectedYear, requestId)
+                    addDiscoverySection("Séries", query, selectedYear, requestId)
+                    addDiscoverySection("Anime", query, selectedYear, requestId)
                 }
             }
         }
