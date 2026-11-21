@@ -144,7 +144,7 @@ object CatalogRepository {
                         readValue(doc.opt("runtime"))
                     )
 
-                    if (duration < 3600) continue
+                    if (duration > 0 && duration < 3600) continue
 
                     val identifier = doc.optString("identifier", "")
                     if (identifier.isBlank()) continue

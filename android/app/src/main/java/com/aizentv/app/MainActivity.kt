@@ -733,11 +733,62 @@ class MainActivity : Activity() {
         content.addView(smallLabel("AIZEN TV • CATÁLOGO"))
         content.addView(heading("Explorar"))
         content.addView(description(
-            "Pesquisa conteúdos e consulta as informações da fonte original."
+            "Pesquisa filmes, séries e anime num só lugar."
         ))
 
+        val categories = listOf("Todos", "Filmes", "Séries", "Anime")
+        val categoryButtons = mutableMapOf<String, TextView>()
+
+        val categoryRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        fun updateCategoryButtons() {
+            categoryButtons.forEach { (name, view) ->
+                val selected = name == selectedCategory
+                view.background = rounded(
+                    if (selected) purpleDark else panel,
+                    18
+                )
+                view.setTextColor(if (selected) white else muted)
+            }
+        }
+
+        categories.forEach { category ->
+            val chip = text(
+                category,
+                12f,
+                muted,
+                true
+            ).apply {
+                gravity = Gravity.CENTER
+                setPadding(dp(16), dp(11), dp(16), dp(11))
+                background = rounded(panel, 18)
+                setOnClickListener {
+                    selectedCategory = category
+                    updateCategoryButtons()
+                }
+            }
+
+            categoryButtons[category] = chip
+            categoryRow.addView(
+                chip,
+                LinearLayout.LayoutParams(-2, -2).apply {
+                    rightMargin = dp(8)
+                }
+            )
+        }
+
+        updateCategoryButtons()
+
+        val categoryScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(categoryRow)
+        }
+        content.addView(categoryScroll)
+
         val search = EditText(this).apply {
-            hint = "Título, filme ou palavra-chave"
+            hint = "Pesquisar por título..."
             setHintTextColor(muted)
             setTextColor(white)
             textSize = 14f
@@ -746,90 +797,117 @@ class MainActivity : Activity() {
             setPadding(dp(15), dp(13), dp(15), dp(13))
             background = rounded(panel, 14)
         }
-        content.addView(search)
+
+        content.addView(search,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(14)
+            }
+        )
+
+        val year = EditText(this).apply {
+            hint = "Filtrar por ano (ex.: 2020)"
+            setHintTextColor(muted)
+            setTextColor(white)
+            textSize = 13f
+            setSingleLine(true)
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setPadding(dp(15), dp(12), dp(15), dp(12))
+            background = rounded(panel, 14)
+        }
+
+        content.addView(year,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(9)
+            }
+        )
 
         val results = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
 
-        fun performSearch(query: String) {
-            results.removeAllViews()
-            results.addView(description("A procurar no catálogo..."))
+        fun matchesYear(value: String, selectedYear: String): Boolean {
+            if (selectedYear.isBlank()) return true
+            if (!selectedYear.matches(Regex("[0-9]{4}"))) return false
+            return Regex("[0-9]{4}").find(value)?.value == selectedYear
+        }
+
+        fun addMovieSection(query: String, selectedYear: String) {
+            results.addView(heading("Filmes"))
+            val section = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+            }
+            results.addView(section)
+            section.addView(description("A procurar filmes..."))
 
             CatalogRepository.search(query) { response ->
-                results.removeAllViews()
+                section.removeAllViews()
 
                 response.onSuccess { items ->
-                    if (items.isEmpty()) {
-                        results.addView(card(
-                            "Nenhum resultado disponível",
-                            "Não encontrámos conteúdos compatíveis nesta fonte. " +
-                            "Experimenta outro título."
+                    val filtered = items.filter {
+                        matchesYear(it.year, selectedYear)
+                    }.take(30)
+
+                    if (filtered.isEmpty()) {
+                        section.addView(card(
+                            "Sem filmes encontrados",
+                            "Experimenta outro título ou ano."
                         ))
                     } else {
-                        results.addView(
-                            text("${items.size} RESULTADOS",
-                                10f, purple, true).apply {
-                                setPadding(0, dp(18), 0, dp(10))
-                            }
-                        )
+                        section.addView(text(
+                            "${filtered.size} RESULTADOS",
+                            10f, purple, true
+                        ).apply {
+                            setPadding(0, 0, 0, dp(10))
+                        })
 
-                        items.take(30).forEach { item ->
+                        filtered.forEach { item ->
                             val cover = android.widget.ImageView(this).apply {
                                 scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-                                background = rounded(panel, 12)
+                                background = rounded(panel2, 12)
                                 contentDescription = "Capa de ${item.title}"
                             }
-
                             loadCover(item.identifier, cover)
 
                             val info = LinearLayout(this).apply {
                                 orientation = LinearLayout.VERTICAL
-
-                                addView(text(item.title, 15f, white, true))
-
+                                addView(text(item.title, 14f, white, true))
                                 addView(text(
-                                    "${item.year}  •  ${item.durationLabel}",
+                                    "${item.year} • ${item.durationLabel}",
                                     11f, purple
                                 ).apply {
-                                    setPadding(0, dp(6), 0, dp(5))
+                                    setPadding(0, dp(6), 0, dp(6))
                                 })
-
                                 addView(text(
-                                    "Autor: ${item.creator}\nLicença declarada: ${item.licenseLabel}",
-                                    11f, muted
+                                    "Licença declarada: ${item.licenseLabel}",
+                                    10f, muted
                                 ))
-
                                 addView(text(
-                                    "VER DETALHES  →",
+                                    "VER DETALHES →",
                                     10f, purple, true
                                 ).apply {
-                                    setPadding(0, dp(12), 0, 0)
+                                    setPadding(0, dp(9), 0, 0)
                                 })
                             }
 
-                            val movie = LinearLayout(this).apply {
+                            val row = LinearLayout(this).apply {
                                 orientation = LinearLayout.HORIZONTAL
                                 gravity = Gravity.CENTER_VERTICAL
                                 background = rounded(panel, 16)
-                                setPadding(dp(12), dp(12), dp(12), dp(12))
-
+                                setPadding(dp(11), dp(11), dp(11), dp(11))
                                 addView(cover,
-                                    LinearLayout.LayoutParams(dp(104), dp(148))
+                                    LinearLayout.LayoutParams(dp(94), dp(132))
                                 )
-
                                 addView(info,
                                     LinearLayout.LayoutParams(0, -2, 1f).apply {
-                                        leftMargin = dp(13)
+                                        leftMargin = dp(12)
                                     }
                                 )
-
                                 setOnClickListener {
                                     buildMovieDetails(item)
                                 }
                             }
 
-                            results.addView(movie,
+                            section.addView(row,
                                 LinearLayout.LayoutParams(-1, -2).apply {
                                     bottomMargin = dp(10)
                                 }
@@ -837,27 +915,148 @@ class MainActivity : Activity() {
                         }
                     }
                 }.onFailure {
-                    results.addView(card(
-                        "Não foi possível carregar",
+                    section.addView(card(
+                        "Erro ao carregar filmes",
+                        "Verifica a ligação e tenta novamente."
+                    ))
+                }
+            }
+        }
+
+        fun addDiscoverySection(
+            category: String,
+            query: String,
+            selectedYear: String
+        ) {
+            results.addView(heading(category))
+            val section = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+            }
+            results.addView(section)
+            section.addView(description("A procurar $category..."))
+
+            DiscoveryRepository.search(category, query) { response ->
+                section.removeAllViews()
+
+                response.onSuccess { items ->
+                    val filtered = items.filter {
+                        matchesYear(it.subtitle, selectedYear)
+                    }.take(30)
+
+                    if (filtered.isEmpty()) {
+                        section.addView(card(
+                            "Sem resultados",
+                            "Não encontrámos títulos desta categoria para os filtros escolhidos."
+                        ))
+                    } else {
+                        section.addView(text(
+                            "${filtered.size} RESULTADOS",
+                            10f, purple, true
+                        ).apply {
+                            setPadding(0, 0, 0, dp(10))
+                        })
+
+                        filtered.forEach { item ->
+                            val cover = android.widget.ImageView(this).apply {
+                                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                                background = rounded(panel2, 12)
+                                contentDescription = "Capa de ${item.title}"
+                            }
+                            loadRemoteImage(item.imageUrl, cover)
+
+                            val info = LinearLayout(this).apply {
+                                orientation = LinearLayout.VERTICAL
+                                addView(text(item.title, 14f, white, true))
+                                addView(text(
+                                    item.subtitle,
+                                    11f, purple
+                                ).apply {
+                                    setPadding(0, dp(6), 0, dp(7))
+                                })
+                                addView(text(
+                                    item.description.ifBlank {
+                                        "Descrição não disponível."
+                                    }.take(180),
+                                    11f, muted
+                                ))
+                                addView(text(
+                                    "VER INFORMAÇÕES →",
+                                    10f, purple, true
+                                ).apply {
+                                    setPadding(0, dp(9), 0, 0)
+                                })
+                            }
+
+                            val row = LinearLayout(this).apply {
+                                orientation = LinearLayout.HORIZONTAL
+                                gravity = Gravity.CENTER_VERTICAL
+                                background = rounded(panel, 16)
+                                setPadding(dp(11), dp(11), dp(11), dp(11))
+                                addView(cover,
+                                    LinearLayout.LayoutParams(dp(94), dp(132))
+                                )
+                                addView(info,
+                                    LinearLayout.LayoutParams(0, -2, 1f).apply {
+                                        leftMargin = dp(12)
+                                    }
+                                )
+                                setOnClickListener {
+                                    buildDiscoveryDetails(item)
+                                }
+                            }
+
+                            section.addView(row,
+                                LinearLayout.LayoutParams(-1, -2).apply {
+                                    bottomMargin = dp(10)
+                                }
+                            )
+                        }
+                    }
+                }.onFailure {
+                    section.addView(card(
+                        "Erro ao carregar $category",
                         "Verifica a ligação à Internet e tenta novamente."
                     ))
                 }
             }
         }
 
-        val searchButton = button("PESQUISAR") {
-            performSearch(search.text.toString())
+        fun performSearch() {
+            val query = search.text.toString().trim()
+            val selectedYear = year.text.toString().trim()
+
+            results.removeAllViews()
+
+            if (selectedYear.isNotBlank() &&
+                !selectedYear.matches(Regex("[0-9]{4}"))) {
+                results.addView(card(
+                    "Ano inválido",
+                    "Introduz um ano com quatro algarismos."
+                ))
+                return
+            }
+
+            when (selectedCategory) {
+                "Filmes" -> addMovieSection(query, selectedYear)
+                "Séries" -> addDiscoverySection("Séries", query, selectedYear)
+                "Anime" -> addDiscoverySection("Anime", query, selectedYear)
+                else -> {
+                    addMovieSection(query, selectedYear)
+                    addDiscoverySection("Séries", query, selectedYear)
+                    addDiscoverySection("Anime", query, selectedYear)
+                }
+            }
         }
 
-        content.addView(searchButton,
-            LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(10)
-            }
-        )
+        content.addView(button("PESQUISAR") {
+            performSearch()
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(10)
+        })
 
         search.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH) {
-                performSearch(search.text.toString())
+                performSearch()
                 true
             } else {
                 false
@@ -866,11 +1065,11 @@ class MainActivity : Activity() {
 
         content.addView(results,
             LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(17)
+                topMargin = dp(12)
             }
         )
 
-        performSearch("")
+        performSearch()
     }
 
     private fun buildMovieDetails(item: CatalogItem) {
