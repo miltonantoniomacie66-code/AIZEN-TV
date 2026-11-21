@@ -353,10 +353,10 @@ class MainActivity : Activity() {
             })
             addView(text(subtitle, 10f, Color.rgb(220, 211, 231)))
             setOnClickListener {
-                if (destination == "Filmes") {
-                    showPage("Explorar")
-                } else {
-                    showUnavailableUniverse(destination)
+                when (destination) {
+                    "Filmes" -> showPage("Explorar")
+                    "Séries", "Anime" -> buildDiscovery(destination)
+                    else -> showUnavailableUniverse(destination)
                 }
             }
         }
@@ -453,6 +453,221 @@ class MainActivity : Activity() {
                 }
             }
         }.start()
+    }
+
+
+    private fun loadRemoteImage(
+        imageUrl: String,
+        target: android.widget.ImageView
+    ) {
+        target.tag = imageUrl
+        if (!imageUrl.startsWith("https://")) return
+
+        Thread {
+            var bitmap: android.graphics.Bitmap? = null
+            var connection: java.net.HttpURLConnection? = null
+            try {
+                connection = java.net.URL(imageUrl)
+                    .openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 12000
+                connection.readTimeout = 15000
+                connection.setRequestProperty("User-Agent", "AIZEN-TV Android")
+                if (connection.responseCode in 200..299) {
+                    connection.inputStream.use {
+                        bitmap = android.graphics.BitmapFactory.decodeStream(it)
+                    }
+                }
+            } catch (_: Exception) {
+            } finally {
+                connection?.disconnect()
+            }
+
+            val result = bitmap
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                if (target.tag == imageUrl && result != null) {
+                    target.setImageBitmap(result)
+                }
+            }
+        }.start()
+    }
+
+    private fun buildDiscovery(category: String) {
+        content.removeAllViews()
+        content.addView(text("←  VOLTAR AO INÍCIO", 12f, purple, true).apply {
+            setPadding(0, dp(12), 0, dp(18))
+            setOnClickListener { showPage("Início") }
+        })
+        content.addView(smallLabel("AIZEN TV • $category"))
+        content.addView(heading("Explorar $category"))
+        content.addView(description(
+            "Descobre títulos, capas e informações através de fontes externas."
+        ))
+
+        val search = EditText(this).apply {
+            hint = if (category == "Anime") "Pesquisar anime..."
+                else "Pesquisar séries..."
+            setHintTextColor(muted)
+            setTextColor(white)
+            textSize = 14f
+            setSingleLine(true)
+            imeOptions = EditorInfo.IME_ACTION_SEARCH
+            setPadding(dp(15), dp(13), dp(15), dp(13))
+            background = rounded(panel, 14)
+        }
+        content.addView(search)
+
+        val results = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        fun performSearch(query: String) {
+            results.removeAllViews()
+            results.addView(description("A procurar $category..."))
+
+            DiscoveryRepository.search(category, query) { response ->
+                results.removeAllViews()
+                response.onSuccess { items ->
+                    if (items.isEmpty()) {
+                        results.addView(card(
+                            "Nenhum resultado encontrado",
+                            "Experimenta outro título ou tenta novamente mais tarde."
+                        ))
+                    } else {
+                        results.addView(text(
+                            "${items.size} RESULTADOS",
+                            10f, purple, true
+                        ).apply {
+                            setPadding(0, dp(16), 0, dp(10))
+                        })
+
+                        items.forEach { item ->
+                            val cover = android.widget.ImageView(this).apply {
+                                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                                background = rounded(panel2, 12)
+                                contentDescription = "Capa de ${item.title}"
+                            }
+                            loadRemoteImage(item.imageUrl, cover)
+
+                            val info = LinearLayout(this).apply {
+                                orientation = LinearLayout.VERTICAL
+                                addView(text(item.title, 15f, white, true))
+                                addView(text(
+                                    item.subtitle,
+                                    11f, purple
+                                ).apply {
+                                    setPadding(0, dp(6), 0, dp(7))
+                                })
+                                addView(text(
+                                    item.description.ifBlank {
+                                        "Descrição não disponível."
+                                    }.take(180),
+                                    11f, muted
+                                ))
+                                addView(text(
+                                    "VER INFORMAÇÕES  →",
+                                    10f, purple, true
+                                ).apply {
+                                    setPadding(0, dp(10), 0, 0)
+                                })
+                            }
+
+                            val row = LinearLayout(this).apply {
+                                orientation = LinearLayout.HORIZONTAL
+                                gravity = Gravity.CENTER_VERTICAL
+                                background = rounded(panel, 16)
+                                setPadding(dp(11), dp(11), dp(11), dp(11))
+                                addView(cover,
+                                    LinearLayout.LayoutParams(dp(94), dp(132))
+                                )
+                                addView(info,
+                                    LinearLayout.LayoutParams(0, -2, 1f).apply {
+                                        leftMargin = dp(12)
+                                    }
+                                )
+                                setOnClickListener {
+                                    buildDiscoveryDetails(item)
+                                }
+                            }
+
+                            results.addView(row,
+                                LinearLayout.LayoutParams(-1, -2).apply {
+                                    bottomMargin = dp(10)
+                                }
+                            )
+                        }
+                    }
+                }.onFailure {
+                    results.addView(card(
+                        "Não foi possível carregar",
+                        "Verifica a ligação à Internet e tenta novamente."
+                    ))
+                }
+            }
+        }
+
+        content.addView(button("PESQUISAR") {
+            performSearch(search.text.toString())
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(10)
+        })
+
+        search.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                performSearch(search.text.toString())
+                true
+            } else false
+        }
+
+        content.addView(results,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(16)
+            }
+        )
+        performSearch("")
+    }
+
+    private fun buildDiscoveryDetails(item: DiscoveryItem) {
+        content.removeAllViews()
+
+        content.addView(text("←  VOLTAR A ${item.category.uppercase()}",
+            12f, purple, true).apply {
+            setPadding(0, dp(12), 0, dp(18))
+            setOnClickListener { buildDiscovery(item.category) }
+        })
+
+        content.addView(smallLabel("AIZEN TV • ${item.category.uppercase()}"))
+
+        val cover = android.widget.ImageView(this).apply {
+            scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            background = rounded(panel, 14)
+            contentDescription = "Capa de ${item.title}"
+        }
+        loadRemoteImage(item.imageUrl, cover)
+        content.addView(cover,
+            LinearLayout.LayoutParams(dp(155), dp(220)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                bottomMargin = dp(14)
+            }
+        )
+
+        content.addView(heading(item.title))
+        content.addView(description(item.subtitle))
+        content.addView(card(
+            "Sinopse",
+            item.description.ifBlank { "Descrição não disponível." }
+        ))
+        content.addView(description(
+            "Informações fornecidas por ${if (item.category == "Anime") "AniList" else "TVmaze"}. " +
+            "Esta fonte apresenta metadados e não fornece, por si só, autorização para reprodução."
+        ))
+        content.addView(button("CONSULTAR FONTE ORIGINAL  ↗") {
+            startActivity(Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(item.sourceUrl)
+            ))
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(10)
+        })
     }
 
     private fun buildExplore() {
