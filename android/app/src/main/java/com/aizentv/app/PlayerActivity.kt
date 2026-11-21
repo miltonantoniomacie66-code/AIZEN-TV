@@ -11,6 +11,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
 
 class PlayerActivity : Activity() {
@@ -58,7 +59,15 @@ class PlayerActivity : Activity() {
             }
         )
 
-        val exoPlayer = ExoPlayer.Builder(this).build()
+        val trackSelector = DefaultTrackSelector(this).apply {
+            parameters = buildUponParameters()
+                .setPreferredTextLanguages("pt", "en")
+                .build()
+        }
+
+        val exoPlayer = ExoPlayer.Builder(this)
+            .setTrackSelector(trackSelector)
+            .build()
         player = exoPlayer
         playerView.player = exoPlayer
 
