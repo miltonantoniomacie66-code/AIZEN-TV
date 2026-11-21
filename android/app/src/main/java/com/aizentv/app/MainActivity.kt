@@ -410,6 +410,51 @@ class MainActivity : Activity() {
         })
     }
 
+    private fun loadCover(
+        identifier: String,
+        target: android.widget.ImageView
+    ) {
+        target.tag = identifier
+
+        Thread {
+            var bitmap: android.graphics.Bitmap? = null
+            var connection: java.net.HttpURLConnection? = null
+
+            try {
+                val address =
+                    "https://archive.org/services/img/$identifier"
+
+                connection = java.net.URL(address)
+                    .openConnection() as java.net.HttpURLConnection
+
+                connection.connectTimeout = 12000
+                connection.readTimeout = 15000
+                connection.requestMethod = "GET"
+                connection.connect()
+
+                if (connection.responseCode in 200..299) {
+                    connection.inputStream.use {
+                        bitmap = android.graphics.BitmapFactory.decodeStream(it)
+                    }
+                }
+            } catch (_: Exception) {
+                // Mantém a capa de substituição se a imagem não carregar.
+            } finally {
+                connection?.disconnect()
+            }
+
+            val result = bitmap
+
+            android.os.Handler(
+                android.os.Looper.getMainLooper()
+            ).post {
+                if (target.tag == identifier && result != null) {
+                    target.setImageBitmap(result)
+                }
+            }
+        }.start()
+    }
+
     private fun buildExplore() {
         content.addView(smallLabel("AIZEN TV • CATÁLOGO"))
         content.addView(heading("Explorar"))
@@ -455,26 +500,56 @@ class MainActivity : Activity() {
                             }
                         )
 
-                        items.forEach { item ->
-                            val movie = LinearLayout(this).apply {
+                        items.take(30).forEach { item ->
+                            val cover = android.widget.ImageView(this).apply {
+                                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                                background = rounded(panel, 12)
+                                contentDescription = "Capa de ${item.title}"
+                            }
+
+                            loadCover(item.identifier, cover)
+
+                            val info = LinearLayout(this).apply {
                                 orientation = LinearLayout.VERTICAL
-                                background = rounded(panel, 16)
-                                setPadding(dp(16), dp(15), dp(16), dp(15))
+
                                 addView(text(item.title, 15f, white, true))
+
                                 addView(text(
                                     "${item.year}  •  ${item.durationLabel}",
                                     11f, purple
                                 ).apply {
                                     setPadding(0, dp(6), 0, dp(5))
                                 })
+
                                 addView(text(
                                     "Autor: ${item.creator}\nLicença declarada: ${item.licenseLabel}",
                                     11f, muted
                                 ))
-                                addView(text("VER DETALHES  →",
-                                    10f, purple, true).apply {
+
+                                addView(text(
+                                    "VER DETALHES  →",
+                                    10f, purple, true
+                                ).apply {
                                     setPadding(0, dp(12), 0, 0)
                                 })
+                            }
+
+                            val movie = LinearLayout(this).apply {
+                                orientation = LinearLayout.HORIZONTAL
+                                gravity = Gravity.CENTER_VERTICAL
+                                background = rounded(panel, 16)
+                                setPadding(dp(12), dp(12), dp(12), dp(12))
+
+                                addView(cover,
+                                    LinearLayout.LayoutParams(dp(104), dp(148))
+                                )
+
+                                addView(info,
+                                    LinearLayout.LayoutParams(0, -2, 1f).apply {
+                                        leftMargin = dp(13)
+                                    }
+                                )
+
                                 setOnClickListener {
                                     buildMovieDetails(item)
                                 }
@@ -534,6 +609,21 @@ class MainActivity : Activity() {
         })
 
         content.addView(smallLabel("AIZEN TV • DETALHES"))
+        val detailCover = android.widget.ImageView(this).apply {
+            scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+            background = rounded(panel, 14)
+            contentDescription = "Capa de ${item.title}"
+        }
+
+        loadCover(item.identifier, detailCover)
+
+        content.addView(detailCover,
+            LinearLayout.LayoutParams(dp(150), dp(215)).apply {
+                gravity = Gravity.CENTER_HORIZONTAL
+                bottomMargin = dp(16)
+            }
+        )
+
         content.addView(heading(item.title))
         content.addView(description(
             "${item.year}  •  ${item.durationLabel}"
