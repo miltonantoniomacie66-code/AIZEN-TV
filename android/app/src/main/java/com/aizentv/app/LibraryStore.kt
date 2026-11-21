@@ -10,11 +10,21 @@ data class WatchProgress(
     val updatedAt: Long
 )
 
+data class SavedMedia(
+    val mediaId: String,
+    val title: String,
+    val creator: String,
+    val year: String,
+    val imageUrl: String,
+    val sourceUrl: String
+)
+
 object LibraryStore {
 
     private const val PREFS = "aizen_personal_library"
     private const val FAVORITES = "favorites"
     private const val PROGRESS_PREFIX = "progress_"
+    private const val MEDIA_PREFIX = "media_"
 
     private fun prefs(context: Context) =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -42,6 +52,39 @@ object LibraryStore {
         prefs(context).getStringSet(FAVORITES, emptySet())
             ?.toSet() ?: emptySet()
 
+    fun saveMedia(context: Context, media: SavedMedia) {
+        val data = JSONObject()
+            .put("mediaId", media.mediaId)
+            .put("title", media.title)
+            .put("creator", media.creator)
+            .put("year", media.year)
+            .put("imageUrl", media.imageUrl)
+            .put("sourceUrl", media.sourceUrl)
+
+        prefs(context).edit()
+            .putString(MEDIA_PREFIX + media.mediaId, data.toString())
+            .apply()
+    }
+
+    fun getMedia(context: Context, mediaId: String): SavedMedia? {
+        val raw = prefs(context).getString(MEDIA_PREFIX + mediaId, null)
+            ?: return null
+
+        return try {
+            val data = JSONObject(raw)
+            SavedMedia(
+                mediaId = data.getString("mediaId"),
+                title = data.optString("title", mediaId),
+                creator = data.optString("creator", ""),
+                year = data.optString("year", ""),
+                imageUrl = data.optString("imageUrl", ""),
+                sourceUrl = data.optString("sourceUrl", "")
+            )
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     fun saveProgress(
         context: Context,
         mediaId: String,
@@ -60,14 +103,9 @@ object LibraryStore {
             .apply()
     }
 
-    fun getProgress(
-        context: Context,
-        mediaId: String
-    ): WatchProgress? {
-        val raw = prefs(context).getString(
-            PROGRESS_PREFIX + mediaId,
-            null
-        ) ?: return null
+    fun getProgress(context: Context, mediaId: String): WatchProgress? {
+        val raw = prefs(context).getString(PROGRESS_PREFIX + mediaId, null)
+            ?: return null
 
         return try {
             val data = JSONObject(raw)
@@ -82,6 +120,27 @@ object LibraryStore {
         }
     }
 
+    fun history(context: Context): List<WatchProgress> {
+        return prefs(context).all.keys
+            .filter { it.startsWith(PROGRESS_PREFIX) }
+            .mapNotNull { key ->
+                val id = key.removePrefix(PROGRESS_PREFIX)
+                getProgress(context, id)
+            }
+            .sortedByDescending { it.updatedAt }
+    }
+
     fun lastWatched(context: Context): String? =
         prefs(context).getString("last_watched", null)
+
+    fun clearProgress(context: Context, mediaId: String) {
+        val editor = prefs(context).edit()
+            .remove(PROGRESS_PREFIX + mediaId)
+
+        if (lastWatched(context) == mediaId) {
+            editor.remove("last_watched")
+        }
+
+        editor.apply()
+    }
 }

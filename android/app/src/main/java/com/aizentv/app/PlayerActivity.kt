@@ -16,10 +16,12 @@ import androidx.media3.ui.PlayerView
 class PlayerActivity : Activity() {
 
     private var player: ExoPlayer? = null
+    private var mediaId: String? = null
     private lateinit var playerView: PlayerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        mediaId = intent.getStringExtra(EXTRA_MEDIA_ID)
 
         val mediaUrl = intent.getStringExtra(EXTRA_MEDIA_URL)
         if (mediaUrl.isNullOrBlank()) {
@@ -76,14 +78,29 @@ class PlayerActivity : Activity() {
     }
 
     override fun onStop() {
-        super.onStop()
-        playerView.player = null
+        val id = mediaId
+        val activePlayer = player
+
+        if (!id.isNullOrBlank() && activePlayer != null) {
+            LibraryStore.saveProgress(
+                this,
+                id,
+                activePlayer.currentPosition,
+                activePlayer.duration.coerceAtLeast(0L)
+            )
+        }
+
+        if (::playerView.isInitialized) {
+            playerView.player = null
+        }
+
         player?.release()
         player = null
+        super.onStop()
     }
-
     companion object {
         const val EXTRA_MEDIA_URL = "aizen_media_url"
         const val EXTRA_TITLE = "aizen_media_title"
+        const val EXTRA_MEDIA_ID = "aizen_media_id"
     }
 }

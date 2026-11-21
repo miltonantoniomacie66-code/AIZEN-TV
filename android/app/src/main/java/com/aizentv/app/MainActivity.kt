@@ -396,20 +396,79 @@ class MainActivity : Activity() {
             ))
         } else {
             favorites.forEach { id ->
-                content.addView(card(
-                    id,
-                    "Conteúdo guardado na tua biblioteca."
-                ), LinearLayout.LayoutParams(-1, -2).apply {
+                val saved = LibraryStore.getMedia(this, id)
+                val title = saved?.title?.takeIf { it.isNotBlank() } ?: id
+                val details = listOfNotNull(
+                    saved?.creator?.takeIf { it.isNotBlank() },
+                    saved?.year?.takeIf { it.isNotBlank() }
+                ).joinToString(" • ").ifBlank { "Conteúdo guardado na tua biblioteca." }
+
+                val itemCard = card(title, details)
+                itemCard.setOnClickListener {
+                    val url = saved?.sourceUrl
+                    if (!url.isNullOrBlank()) {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                    }
+                }
+                content.addView(itemCard, LinearLayout.LayoutParams(-1, -2).apply {
                     bottomMargin = dp(9)
                 })
             }
         }
+
+        content.addView(button("VER HISTÓRICO") {
+            showHistory()
+        })
 
         content.addView(button("VOLTAR") {
             showPage("Início")
         })
     }
 
+    private fun showHistory() {
+        content.removeAllViews()
+        content.addView(smallLabel("A TUA BIBLIOTECA"))
+        content.addView(heading("Histórico"))
+        content.addView(description("Os conteúdos aparecem aqui quando o Player guardar o progresso."))
+
+        val history = LibraryStore.history(this)
+        if (history.isEmpty()) {
+            content.addView(card(
+                "Histórico vazio",
+                "Quando começares a assistir a um conteúdo compatível, o progresso ficará registado aqui."
+            ))
+        } else {
+            history.forEach { progress ->
+                val saved = LibraryStore.getMedia(this, progress.mediaId)
+                val title = saved?.title?.takeIf { it.isNotBlank() } ?: progress.mediaId
+                val position = formatPlaybackTime(progress.positionMs)
+                val duration = if (progress.durationMs > 0)
+                    formatPlaybackTime(progress.durationMs) else "desconhecida"
+                val percent = if (progress.durationMs > 0)
+                    ((progress.positionMs * 100) / progress.durationMs).coerceIn(0, 100) else 0
+
+                content.addView(card(
+                    title,
+                    "Progresso: $position de $duration • $percent%"
+                ), LinearLayout.LayoutParams(-1, -2).apply {
+                    bottomMargin = dp(9)
+                })
+            }
+        }
+
+        content.addView(button("VOLTAR À MINHA LISTA") {
+            showFavorites()
+        })
+    }
+
+    private fun formatPlaybackTime(milliseconds: Long): String {
+        val totalSeconds = milliseconds.coerceAtLeast(0) / 1000
+        val hours = totalSeconds / 3600
+        val minutes = (totalSeconds % 3600) / 60
+        val seconds = totalSeconds % 60
+        return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, seconds)
+        else "%02d:%02d".format(minutes, seconds)
+    }
     private fun loadCover(
         identifier: String,
         target: android.widget.ImageView
@@ -849,6 +908,15 @@ class MainActivity : Activity() {
             "Autor: ${item.creator}\n" +
             "Duração declarada: ${item.durationLabel}\n" +
             "Licença declarada: ${item.licenseLabel}"
+        ))
+
+        LibraryStore.saveMedia(this, SavedMedia(
+            mediaId = item.identifier,
+            title = item.title,
+            creator = item.creator,
+            year = item.year,
+            imageUrl = "https://archive.org/services/img/${item.identifier}",
+            sourceUrl = item.sourceUrl
         ))
 
         val favorite = LibraryStore.isFavorite(this, item.identifier)
