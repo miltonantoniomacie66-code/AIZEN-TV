@@ -248,7 +248,7 @@ class MainActivity : Activity() {
     private fun buildExplore() {
         content.addView(heading("Explorar filmes"))
         content.addView(description(
-            "Descobre filmes com licenças abertas identificadas."
+            "Filmes com duração declarada de pelo menos 60 minutos."
         ))
 
         val search = EditText(this).apply {
@@ -264,17 +264,19 @@ class MainActivity : Activity() {
         content.addView(search)
 
         val searchButton = text(
-            "PESQUISAR FILMES", 13f, white, true
+            "PESQUISAR", 13f, white, true
         ).apply {
             gravity = Gravity.CENTER
             background = rounded(purple, 12)
             setPadding(dp(16), dp(13), dp(16), dp(13))
         }
 
-        content.addView(searchButton, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(10)
-            bottomMargin = dp(16)
-        })
+        content.addView(searchButton,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(10)
+                bottomMargin = dp(16)
+            }
+        )
 
         val results = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -292,7 +294,7 @@ class MainActivity : Activity() {
                     if (items.isEmpty()) {
                         results.addView(card(
                             "Nenhum filme encontrado",
-                            "Não encontrámos títulos com as licenças abertas que aceitamos."
+                            "Não encontrámos filmes com duração e licença declaradas compatíveis."
                         ))
                     } else {
                         results.addView(description(
@@ -302,17 +304,14 @@ class MainActivity : Activity() {
                         items.forEach { item ->
                             val movie = card(
                                 item.title,
-                                "${item.year} • ${item.creator}\n" +
-                                "Licença: ${item.licenseLabel}\n" +
-                                "Ver na fonte original →"
+                                "${item.year} • ${item.durationLabel}\n" +
+                                "${item.creator}\n" +
+                                "Licença declarada: ${item.licenseLabel}\n" +
+                                "VER DETALHES  →"
                             )
 
                             movie.setOnClickListener {
-                                val intent = Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse(item.sourceUrl)
-                                )
-                                startActivity(intent)
+                                buildMovieDetails(item)
                             }
 
                             results.addView(
@@ -337,6 +336,56 @@ class MainActivity : Activity() {
         }
 
         performSearch("")
+    }
+
+    private fun buildMovieDetails(item: CatalogItem) {
+        content.removeAllViews()
+
+        val back = text("← VOLTAR AO CATÁLOGO", 13f, purple, true).apply {
+            setPadding(0, dp(12), 0, dp(18))
+            setOnClickListener { showPage("Explorar") }
+        }
+        content.addView(back)
+
+        content.addView(label("AIZEN TV • DETALHES"))
+        content.addView(heading(item.title))
+        content.addView(description(
+            "${item.year} • ${item.durationLabel}"
+        ))
+
+        content.addView(card(
+            "Sobre este conteúdo",
+            "Autor: ${item.creator}\n" +
+            "Duração declarada: ${item.durationLabel}\n" +
+            "Licença declarada: ${item.licenseLabel}"
+        ))
+
+        content.addView(heading("Disponibilidade"))
+        content.addView(description(
+            "A reprodução dentro do AIZEN TV ainda está em preparação. " +
+            "A licença declarada pela fonte não representa uma confirmação independente dos direitos."
+        ))
+
+        val sourceButton = text(
+            "CONSULTAR FONTE ORIGINAL  ↗", 13f, white, true
+        ).apply {
+            gravity = Gravity.CENTER
+            background = rounded(purple, 12)
+            setPadding(dp(16), dp(15), dp(16), dp(15))
+            setOnClickListener {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse(item.sourceUrl)
+                )
+                startActivity(intent)
+            }
+        }
+
+        content.addView(sourceButton,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(18)
+            }
+        )
     }
 
     private fun buildPlaceholder(title: String, subtitle: String) {

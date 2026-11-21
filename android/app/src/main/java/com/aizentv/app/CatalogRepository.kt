@@ -2,6 +2,7 @@ package com.aizentv.app
 
 import android.os.Handler
 import android.os.Looper
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -12,22 +13,61 @@ data class CatalogItem(
     val title: String,
     val creator: String,
     val year: String,
-    val licenseUrl: String
+    val licenseUrl: String,
+    val durationSeconds: Long
 ) {
     val sourceUrl: String
         get() = "https://archive.org/details/$identifier"
+
+    val durationLabel: String
+        get() {
+            val hours = durationSeconds / 3600
+            val minutes = (durationSeconds % 3600) / 60
+            return if (hours > 0) "${hours}h ${minutes}min"
+            else "${minutes}min"
+        }
 
     val licenseLabel: String
         get() = when {
             licenseUrl.contains("/publicdomain/zero/1.0") -> "CC0 1.0"
             licenseUrl.contains("/licenses/by-sa/4.0") -> "CC BY-SA 4.0"
-            else -> "CC BY 4.0"
+            licenseUrl.contains("/licenses/by/4.0") -> "CC BY 4.0"
+            else -> "Licença não confirmada"
         }
 }
 
 object CatalogRepository {
 
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    private fun readValue(value: Any?): String {
+        return when (value) {
+            is JSONArray -> value.optString(0, "")
+            null -> ""
+            else -> value.toString()
+        }
+    }
+
+    private fun parseDuration(value: String): Long {
+        val clean = value.trim()
+        if (clean.isEmpty()) return 0
+
+        clean.toLongOrNull()?.let { return it }
+
+        val parts = clean.split(":")
+        if (parts.size !in 2..3) return 0
+
+        return try {
+            val numbers = parts.map { it.toLong() }
+            when (numbers.size) {
+                2 -> numbers[0] * 60 + numbers[1]
+                3 -> numbers[0] * 3600 + numbers[1] * 60 + numbers[2]
+                else -> 0
+            }
+        } catch (_: Exception) {
+            0
+        }
+    }
 
     fun search(
         query: String,
@@ -56,7 +96,8 @@ object CatalogRepository {
                     "&fl%5B%5D=creator" +
                     "&fl%5B%5D=year" +
                     "&fl%5B%5D=licenseurl" +
-                    "&rows=40&page=1&output=json"
+                    "&fl%5B%5D=runtime" +
+                    "&rows=100&page=1&output=json"
 
                 val connection =
                     URL(address).openConnection() as HttpURLConnection
@@ -82,8 +123,9 @@ object CatalogRepository {
                 for (i in 0 until docs.length()) {
                     val doc = docs.getJSONObject(i)
 
-                    val license = doc.optString("licenseurl", "")
-                        .lowercase()
+                    val license = readValue(
+                        doc.opt("licenseurl")
+                    ).lowercase()
 
                     val approved =
                         license.contains(
@@ -98,20 +140,25 @@ object CatalogRepository {
 
                     if (!approved) continue
 
-                    val identifier = doc.optString("identifier", "")
-                    val title = doc.optString("title", "Sem título")
+                    val duration = parseDuration(
+                        readValue(doc.opt("runtime"))
+                    )
 
+                    if (duration < 3600) continue
+
+                    val identifier = doc.optString("identifier", "")
                     if (identifier.isBlank()) continue
 
                     items.add(
                         CatalogItem(
                             identifier = identifier,
-                            title = title,
-                            creator = doc.optString(
-                                "creator", "Autor não indicado"
-                            ),
-                            year = doc.optString("year", "Ano desconhecido"),
-                            licenseUrl = license
+                            title = doc.optString("title", "Sem título"),
+                            creator = readValue(doc.opt("creator")
+                                ?: "Autor não indicado"),
+                            year = readValue(doc.opt("year")
+                                ?: "Ano desconhecido"),
+                            licenseUrl = license,
+                            durationSeconds = duration
                         )
                     )
                 }
