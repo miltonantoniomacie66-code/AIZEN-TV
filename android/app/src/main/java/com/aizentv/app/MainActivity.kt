@@ -9,7 +9,9 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
+import android.view.inputmethod.EditorInfo
 import android.widget.EditText
+import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -17,15 +19,13 @@ import android.widget.TextView
 class MainActivity : Activity() {
 
     private val bg = Color.rgb(8, 8, 13)
-    private val panel = Color.rgb(20, 19, 29)
+    private val panel = Color.rgb(22, 20, 31)
+    private val panel2 = Color.rgb(31, 27, 43)
     private val purple = Color.rgb(168, 85, 247)
+    private val purpleDark = Color.rgb(91, 33, 182)
     private val white = Color.WHITE
-    private val muted = Color.rgb(160, 157, 174)
-    private val categories = listOf(
-        "Todos", "Ação", "Aventura", "Comédia",
-        "Drama", "Ficção científica", "Documentário",
-        "Animação", "Romance"
-    )
+    private val muted = Color.rgb(164, 160, 178)
+    private val green = Color.rgb(65, 190, 140)
 
     private lateinit var content: LinearLayout
     private lateinit var navigation: LinearLayout
@@ -47,6 +47,17 @@ class MainActivity : Activity() {
             cornerRadius = dp(radius).toFloat()
         }
 
+    private fun gradient(
+        colors: IntArray,
+        radius: Int = 22
+    ): GradientDrawable =
+        GradientDrawable(
+            GradientDrawable.Orientation.TL_BR,
+            colors
+        ).apply {
+            cornerRadius = dp(radius).toFloat()
+        }
+
     private fun text(
         value: String,
         size: Float,
@@ -57,54 +68,84 @@ class MainActivity : Activity() {
         textSize = size
         setTextColor(color)
         if (bold) setTypeface(null, Typeface.BOLD)
+        includeFontPadding = true
     }
 
-    private fun label(value: String): TextView =
-        text(value, 12f, purple, true).apply {
-            setPadding(0, dp(8), 0, dp(12))
-        }
-
     private fun heading(value: String): TextView =
-        text(value, 21f, white, true).apply {
-            setPadding(0, dp(20), 0, dp(8))
+        text(value, 20f, white, true).apply {
+            setPadding(0, dp(25), 0, dp(5))
         }
 
     private fun description(value: String): TextView =
-        text(value, 14f, muted).apply {
+        text(value, 13f, muted).apply {
+            setLineSpacing(dp(2).toFloat(), 1f)
             setPadding(0, 0, 0, dp(12))
         }
 
-    private fun card(title: String, subtitle: String): LinearLayout {
-        return LinearLayout(this).apply {
+    private fun smallLabel(value: String): TextView =
+        text(value, 10f, purple, true).apply {
+            letterSpacing = 0.12f
+            setPadding(0, 0, 0, dp(8))
+        }
+
+    private fun button(
+        value: String,
+        action: () -> Unit
+    ): TextView = text(value, 13f, white, true).apply {
+        gravity = Gravity.CENTER
+        background = rounded(purple, 13)
+        setPadding(dp(18), dp(14), dp(18), dp(14))
+        setOnClickListener { action() }
+    }
+
+    private fun card(
+        title: String,
+        subtitle: String
+    ): LinearLayout =
+        LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(16))
-            background = rounded(panel, 16)
-            addView(text(title, 16f, white, true))
-            addView(text(subtitle, 13f, muted).apply {
+            background = rounded(panel, 17)
+            addView(text(title, 15f, white, true))
+            addView(text(subtitle, 12f, muted).apply {
                 setPadding(0, dp(6), 0, 0)
+                setLineSpacing(dp(2).toFloat(), 1f)
             })
         }
-    }
 
     private fun showHome() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(bg)
-            setPadding(dp(20), dp(14), dp(20), dp(6))
+            setPadding(dp(18), dp(12), dp(18), dp(4))
         }
 
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        header.addView(text("AIZEN", 27f, white, true))
-        header.addView(text(" TV", 27f, purple, true))
+
+        val brand = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        brand.addView(text("AIZEN", 25f, white, true))
+        brand.addView(text(" TV", 25f, purple, true))
+        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
+
+        header.addView(
+            text("FREE", 10f, green, true).apply {
+                background = rounded(Color.rgb(18, 48, 39), 20)
+                setPadding(dp(12), dp(7), dp(12), dp(7))
+            }
+        )
         root.addView(header)
 
         root.addView(
-            text("O teu próximo universo de entretenimento.",
-                13f, muted).apply {
-                setPadding(0, dp(4), 0, dp(14))
+            text("O TEU UNIVERSO DE ENTRETENIMENTO",
+                9f, muted, true).apply {
+                letterSpacing = 0.12f
+                setPadding(0, dp(4), 0, dp(12))
             }
         )
 
@@ -115,7 +156,7 @@ class MainActivity : Activity() {
 
         content = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(0, 0, 0, dp(18))
+            setPadding(0, 0, 0, dp(22))
         }
         scroll.addView(content)
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -123,7 +164,8 @@ class MainActivity : Activity() {
         navigation = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            setPadding(0, dp(8), 0, dp(4))
+            background = rounded(panel, 18)
+            setPadding(dp(3), dp(3), dp(3), dp(3))
         }
         root.addView(navigation)
 
@@ -139,153 +181,261 @@ class MainActivity : Activity() {
             "Explorar" -> buildExplore()
             "Ao Vivo" -> buildPlaceholder(
                 "Ao Vivo",
-                "Canais e transmissões de fontes autorizadas."
+                "Uma área para transmissões de canais e eventos com fontes autorizadas."
             )
             "Downloads" -> buildPlaceholder(
-                "Downloads",
-                "Os teus conteúdos disponíveis para ver offline."
+                "Os meus downloads",
+                "Aqui ficarão os conteúdos autorizados para guardar e assistir offline."
             )
             "Perfil" -> buildPlaceholder(
                 "O teu perfil",
-                "A tua conta, preferências e definições."
+                "A tua conta, preferências e definições do AIZEN TV."
             )
         }
 
         buildNavigation(page)
     }
 
+    private fun sectionTitle(title: String, action: String? = null,
+                             onAction: (() -> Unit)? = null) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        row.addView(
+            text(title, 18f, white, true),
+            LinearLayout.LayoutParams(0, -2, 1f)
+        )
+        if (action != null && onAction != null) {
+            row.addView(text(action, 11f, purple, true).apply {
+                setPadding(dp(8), dp(8), 0, dp(8))
+                setOnClickListener { onAction() }
+            })
+        }
+        content.addView(row)
+    }
+
     private fun buildHome() {
-        content.addView(label("ENTRETENIMENTO SEM LIMITES"))
+        content.addView(smallLabel("BEM-VINDO AO AIZEN TV"))
 
         val hero = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(20), dp(22), dp(20), dp(22))
-            background = rounded(panel, 20)
+            setPadding(dp(21), dp(23), dp(21), dp(21))
+            background = gradient(
+                intArrayOf(
+                    Color.rgb(70, 28, 120),
+                    Color.rgb(35, 23, 61),
+                    Color.rgb(20, 19, 29)
+                )
+            )
         }
-        hero.addView(text("BEM-VINDO AO AIZEN", 12f, muted, true))
+
         hero.addView(
-            text("O teu próximo favorito começa aqui.",
-                27f, white, true).apply {
-                setPadding(0, dp(10), 0, dp(10))
+            text("A TUA PRÓXIMA\nHISTÓRIA COMEÇA AQUI",
+                25f, white, true).apply {
+                setLineSpacing(dp(3).toFloat(), 1f)
             }
         )
+
         hero.addView(
-            text("Filmes, séries e conteúdos autorizados num só lugar.",
-                14f, muted)
+            text("Filmes, séries e anime num só universo.",
+                13f, Color.rgb(225, 214, 239)).apply {
+                setPadding(0, dp(10), 0, dp(18))
+            }
         )
 
-        val exploreButton = text("EXPLORAR CATÁLOGO  →", 13f, white, true).apply {
-            gravity = Gravity.CENTER
-            background = rounded(purple, 12)
-            setPadding(dp(16), dp(13), dp(16), dp(13))
-            setOnClickListener { showPage("Explorar") }
-        }
-        hero.addView(exploreButton, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(20)
+        hero.addView(button("EXPLORAR CATÁLOGO  →") {
+            showPage("Explorar")
         })
+
         content.addView(hero)
 
-        content.addView(heading("Descobre o teu próximo favorito"))
+        val searchShortcut = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(panel, 14)
+            setPadding(dp(15), dp(14), dp(15), dp(14))
+            addView(text("⌕", 23f, purple, true))
+            addView(text("  Procurar filmes e conteúdos...", 13f, muted))
+            setOnClickListener { showPage("Explorar") }
+        }
+        content.addView(searchShortcut,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(17)
+            }
+        )
+
+        sectionTitle("Explora por universo")
+
+        val universes = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        addUniverse(
+            universes, "FILMES", "Cinema",
+            intArrayOf(Color.rgb(90, 42, 130), Color.rgb(38, 25, 58)),
+            "Filmes"
+        )
+        addUniverse(
+            universes, "SÉRIES", "Episódios",
+            intArrayOf(Color.rgb(30, 70, 100), Color.rgb(20, 30, 48)),
+            "Séries"
+        )
+        addUniverse(
+            universes, "ANIME", "Animação",
+            intArrayOf(Color.rgb(120, 45, 82), Color.rgb(48, 24, 53)),
+            "Anime"
+        )
+
+        val universeScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(universes)
+        }
+        content.addView(universeScroll)
+
+        sectionTitle("Descobre o AIZEN")
         content.addView(description(
-            "O catálogo será apresentado aqui quando as fontes autorizadas forem ligadas."
+            "Estamos a construir um catálogo com fontes identificadas e conteúdos cuja utilização é autorizada."
         ))
 
-        content.addView(card(
+        val spotlight = card(
             "AIZEN Spotlight",
-            "Destaques selecionados serão apresentados nesta área."
-        ), LinearLayout.LayoutParams(-1, -2).apply {
-            bottomMargin = dp(12)
-        })
+            "Os destaques serão apresentados aqui quando o catálogo visual estiver ligado."
+        )
+        spotlight.background = gradient(
+            intArrayOf(Color.rgb(38, 29, 54), Color.rgb(22, 20, 31)),
+            17
+        )
+        content.addView(spotlight)
 
-        content.addView(heading("Explora por categoria"))
-        content.addView(description(
-            "Escolhe uma categoria para começar a descobrir."
-        ))
-        addCategoryList()
+        sectionTitle("A minha lista", "VER LISTA") {
+            showFavorites()
+        }
 
-        content.addView(heading("A minha lista"))
-        content.addView(card(
-            "Ainda sem favoritos",
-            "Os conteúdos que guardares aparecerão aqui."
-        ))
+        val favorites = LibraryStore.favorites(this)
+        if (favorites.isEmpty()) {
+            content.addView(card(
+                "A tua lista está vazia",
+                "Guarda os teus conteúdos favoritos para os encontrares aqui."
+            ))
+        } else {
+            content.addView(card(
+                "${favorites.size} conteúdos guardados",
+                "Os teus favoritos estão guardados neste dispositivo."
+            ))
+        }
+
+        content.addView(
+            text("AIZEN TV  •  ENTRETENIMENTO NUM SÓ LUGAR",
+                9f, muted).apply {
+                gravity = Gravity.CENTER
+                setPadding(0, dp(25), 0, dp(8))
+                letterSpacing = 0.08f
+            }
+        )
     }
 
-    private fun addCategoryList() {
-        val wrap = LinearLayout(this).apply {
+    private fun addUniverse(
+        parent: LinearLayout,
+        title: String,
+        subtitle: String,
+        colors: IntArray,
+        destination: String
+    ) {
+        val tile = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-        }
-        val rows = categories.chunked(3)
-
-        rows.forEach { row ->
-            val line = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-            }
-            row.forEach { category ->
-                val chip = text(category, 12f,
-                    if (category == selectedCategory) white else muted,
-                    category == selectedCategory
-                ).apply {
-                    gravity = Gravity.CENTER
-                    background = rounded(
-                        if (category == selectedCategory) purple else panel, 18
-                    )
-                    setPadding(dp(12), dp(10), dp(12), dp(10))
-                    setOnClickListener {
-                        selectedCategory = category
-                        showPage("Explorar")
-                    }
+            gravity = Gravity.BOTTOM
+            setPadding(dp(14), dp(14), dp(14), dp(14))
+            background = gradient(colors, 17)
+            addView(text("✦", 25f, white, true))
+            addView(text(title, 13f, white, true).apply {
+                setPadding(0, dp(15), 0, dp(3))
+            })
+            addView(text(subtitle, 10f, Color.rgb(220, 211, 231)))
+            setOnClickListener {
+                if (destination == "Filmes") {
+                    showPage("Explorar")
+                } else {
+                    showUnavailableUniverse(destination)
                 }
-                line.addView(chip, LinearLayout.LayoutParams(0, -2, 1f).apply {
-                    setMargins(dp(2), dp(3), dp(2), dp(3))
+            }
+        }
+
+        parent.addView(tile, LinearLayout.LayoutParams(dp(145), dp(145)).apply {
+            rightMargin = dp(10)
+        })
+    }
+
+    private fun showUnavailableUniverse(name: String) {
+        content.removeAllViews()
+        content.addView(smallLabel("AIZEN TV • CATÁLOGO"))
+        content.addView(heading(name))
+        content.addView(description(
+            "Esta categoria ainda não tem uma fonte de conteúdos integrada. " +
+            "Não vamos apresentar títulos ou transmissões que não estejam disponíveis."
+        ))
+        content.addView(card(
+            "Categoria em desenvolvimento",
+            "A integração será feita numa próxima etapa do projeto."
+        ))
+        content.addView(button("VOLTAR AO INÍCIO") {
+            showPage("Início")
+        })
+    }
+
+    private fun showFavorites() {
+        content.removeAllViews()
+        content.addView(smallLabel("A TUA BIBLIOTECA"))
+        content.addView(heading("A minha lista"))
+
+        val favorites = LibraryStore.favorites(this)
+        if (favorites.isEmpty()) {
+            content.addView(card(
+                "Ainda não tens favoritos",
+                "Quando guardares um filme, ele aparecerá nesta área."
+            ))
+        } else {
+            favorites.forEach { id ->
+                content.addView(card(
+                    id,
+                    "Conteúdo guardado na tua biblioteca."
+                ), LinearLayout.LayoutParams(-1, -2).apply {
+                    bottomMargin = dp(9)
                 })
             }
-            wrap.addView(line)
         }
-        content.addView(wrap)
+
+        content.addView(button("VOLTAR") {
+            showPage("Início")
+        })
     }
 
     private fun buildExplore() {
-        content.addView(heading("Explorar filmes"))
+        content.addView(smallLabel("AIZEN TV • CATÁLOGO"))
+        content.addView(heading("Explorar"))
         content.addView(description(
-            "Filmes com duração declarada de pelo menos 60 minutos."
+            "Pesquisa conteúdos e consulta as informações da fonte original."
         ))
 
         val search = EditText(this).apply {
-            hint = "Pesquisar filmes..."
+            hint = "Título, filme ou palavra-chave"
             setHintTextColor(muted)
             setTextColor(white)
-            textSize = 15f
-            setSingleLine(true)
-            setPadding(dp(16), dp(12), dp(16), dp(12))
+            textSize = 14f
+            singleLine = true
+            imeOptions = EditorInfo.IME_ACTION_SEARCH
+            setPadding(dp(15), dp(13), dp(15), dp(13))
             background = rounded(panel, 14)
         }
-
         content.addView(search)
-
-        val searchButton = text(
-            "PESQUISAR", 13f, white, true
-        ).apply {
-            gravity = Gravity.CENTER
-            background = rounded(purple, 12)
-            setPadding(dp(16), dp(13), dp(16), dp(13))
-        }
-
-        content.addView(searchButton,
-            LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(10)
-                bottomMargin = dp(16)
-            }
-        )
 
         val results = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
-        content.addView(results)
 
         fun performSearch(query: String) {
             results.removeAllViews()
-            results.addView(description("A pesquisar no catálogo..."))
+            results.addView(description("A procurar no catálogo..."))
 
             CatalogRepository.search(query) { response ->
                 results.removeAllViews()
@@ -293,29 +443,44 @@ class MainActivity : Activity() {
                 response.onSuccess { items ->
                     if (items.isEmpty()) {
                         results.addView(card(
-                            "Nenhum filme encontrado",
-                            "Não encontrámos filmes com duração e licença declaradas compatíveis."
+                            "Nenhum resultado disponível",
+                            "Não encontrámos conteúdos compatíveis nesta fonte. " +
+                            "Experimenta outro título."
                         ))
                     } else {
-                        results.addView(description(
-                            "${items.size} filmes encontrados"
-                        ))
+                        results.addView(
+                            text("${items.size} RESULTADOS",
+                                10f, purple, true).apply {
+                                setPadding(0, dp(18), 0, dp(10))
+                            }
+                        )
 
                         items.forEach { item ->
-                            val movie = card(
-                                item.title,
-                                "${item.year} • ${item.durationLabel}\n" +
-                                "${item.creator}\n" +
-                                "Licença declarada: ${item.licenseLabel}\n" +
-                                "VER DETALHES  →"
-                            )
-
-                            movie.setOnClickListener {
-                                buildMovieDetails(item)
+                            val movie = LinearLayout(this).apply {
+                                orientation = LinearLayout.VERTICAL
+                                background = rounded(panel, 16)
+                                setPadding(dp(16), dp(15), dp(16), dp(15))
+                                addView(text(item.title, 15f, white, true))
+                                addView(text(
+                                    "${item.year}  •  ${item.durationLabel}",
+                                    11f, purple
+                                ).apply {
+                                    setPadding(0, dp(6), 0, dp(5))
+                                })
+                                addView(text(
+                                    "Autor: ${item.creator}\nLicença declarada: ${item.licenseLabel}",
+                                    11f, muted
+                                ))
+                                addView(text("VER DETALHES  →",
+                                    10f, purple, true).apply {
+                                    setPadding(0, dp(12), 0, 0)
+                                })
+                                setOnClickListener {
+                                    buildMovieDetails(item)
+                                }
                             }
 
-                            results.addView(
-                                movie,
+                            results.addView(movie,
                                 LinearLayout.LayoutParams(-1, -2).apply {
                                     bottomMargin = dp(10)
                                 }
@@ -331,9 +496,30 @@ class MainActivity : Activity() {
             }
         }
 
-        searchButton.setOnClickListener {
+        val searchButton = button("PESQUISAR") {
             performSearch(search.text.toString())
         }
+
+        content.addView(searchButton,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(10)
+            }
+        )
+
+        search.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                performSearch(search.text.toString())
+                true
+            } else {
+                false
+            }
+        }
+
+        content.addView(results,
+            LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(17)
+            }
+        )
 
         performSearch("")
     }
@@ -341,16 +527,16 @@ class MainActivity : Activity() {
     private fun buildMovieDetails(item: CatalogItem) {
         content.removeAllViews()
 
-        val back = text("← VOLTAR AO CATÁLOGO", 13f, purple, true).apply {
-            setPadding(0, dp(12), 0, dp(18))
+        content.addView(text("←  VOLTAR AO CATÁLOGO",
+            12f, purple, true).apply {
+            setPadding(0, dp(12), 0, dp(20))
             setOnClickListener { showPage("Explorar") }
-        }
-        content.addView(back)
+        })
 
-        content.addView(label("AIZEN TV • DETALHES"))
+        content.addView(smallLabel("AIZEN TV • DETALHES"))
         content.addView(heading(item.title))
         content.addView(description(
-            "${item.year} • ${item.durationLabel}"
+            "${item.year}  •  ${item.durationLabel}"
         ))
 
         content.addView(card(
@@ -360,59 +546,88 @@ class MainActivity : Activity() {
             "Licença declarada: ${item.licenseLabel}"
         ))
 
-        content.addView(heading("Disponibilidade"))
+        val favorite = LibraryStore.isFavorite(this, item.identifier)
+        content.addView(button(
+            if (favorite) "✓  REMOVER DOS FAVORITOS"
+            else "＋  ADICIONAR À MINHA LISTA"
+        ) {
+            if (LibraryStore.isFavorite(this, item.identifier)) {
+                LibraryStore.removeFavorite(this, item.identifier)
+            } else {
+                LibraryStore.addFavorite(this, item.identifier)
+            }
+            buildMovieDetails(item)
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(15)
+        })
+
+        content.addView(heading("Fonte e disponibilidade"))
         content.addView(description(
-            "A reprodução dentro do AIZEN TV ainda está em preparação. " +
-            "A licença declarada pela fonte não representa uma confirmação independente dos direitos."
+            "A fonte declara esta licença, mas os direitos e a disponibilidade " +
+            "da reprodução devem ser confirmados antes de integrar o vídeo."
         ))
 
-        val sourceButton = text(
-            "CONSULTAR FONTE ORIGINAL  ↗", 13f, white, true
-        ).apply {
-            gravity = Gravity.CENTER
-            background = rounded(purple, 12)
-            setPadding(dp(16), dp(15), dp(16), dp(15))
-            setOnClickListener {
-                val intent = Intent(
-                    Intent.ACTION_VIEW,
-                    Uri.parse(item.sourceUrl)
-                )
-                startActivity(intent)
-            }
-        }
-
-        content.addView(sourceButton,
-            LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(18)
-            }
-        )
+        content.addView(button("CONSULTAR FONTE ORIGINAL  ↗") {
+            startActivity(Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(item.sourceUrl)
+            ))
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(8)
+        })
     }
 
     private fun buildPlaceholder(title: String, subtitle: String) {
+        content.addView(smallLabel("AIZEN TV"))
         content.addView(heading(title))
         content.addView(description(subtitle))
+
         content.addView(card(
-            "Área em preparação",
-            "Esta secção será ligada nas próximas etapas do desenvolvimento."
+            "Em desenvolvimento",
+            "Esta secção será ligada às funcionalidades correspondentes nas próximas etapas."
         ))
     }
 
     private fun buildNavigation(page: String) {
-        val items = listOf("Início", "Explorar", "Ao Vivo", "Downloads", "Perfil")
+        val items = listOf(
+            Triple("⌂", "Início", "Início"),
+            Triple("⌕", "Explorar", "Explorar"),
+            Triple("▷", "Ao Vivo", "Ao Vivo"),
+            Triple("↓", "Downloads", "Downloads"),
+            Triple("◉", "Perfil", "Perfil")
+        )
+
         navigation.removeAllViews()
 
         items.forEach { item ->
-            val selected = item == page
-            val button = text(
-                item, 10f,
-                if (selected) purple else muted,
-                selected
-            ).apply {
+            val selected = item.second == page
+
+            val tab = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
-                setPadding(dp(1), dp(12), dp(1), dp(12))
-                setOnClickListener { showPage(item) }
+                setPadding(0, dp(7), 0, dp(7))
+
+                addView(text(
+                    item.first, 19f,
+                    if (selected) purple else muted,
+                    selected
+                ).apply {
+                    gravity = Gravity.CENTER
+                })
+
+                addView(text(
+                    item.third, 9f,
+                    if (selected) purple else muted,
+                    selected
+                ).apply {
+                    gravity = Gravity.CENTER
+                    setPadding(0, dp(2), 0, 0)
+                })
+
+                setOnClickListener { showPage(item.second) }
             }
-            navigation.addView(button, LinearLayout.LayoutParams(0, -2, 1f))
+
+            navigation.addView(tab, LinearLayout.LayoutParams(0, -2, 1f))
         }
     }
 }
