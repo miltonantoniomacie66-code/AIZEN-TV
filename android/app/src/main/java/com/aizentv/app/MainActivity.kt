@@ -711,42 +711,60 @@ class MainActivity : Activity() {
 
         content.addView(text("←  VOLTAR A ${item.category.uppercase()}",
             12f, purple, true).apply {
-            setPadding(0, dp(12), 0, dp(18))
+            setPadding(0, dp(12), 0, dp(20))
             setOnClickListener { buildDiscovery(item.category) }
         })
 
-        content.addView(smallLabel("AIZEN TV • ${item.category.uppercase()}"))
+        content.addView(smallLabel("AIZEN TV  •  ${item.category.uppercase()}"))
 
         val cover = android.widget.ImageView(this).apply {
             scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-            background = rounded(panel, 14)
+            background = rounded(panel, 18)
             contentDescription = "Capa de ${item.title}"
+            elevation = dp(5).toFloat()
         }
+
         loadRemoteImage(item.imageUrl, cover)
+
         content.addView(cover,
-            LinearLayout.LayoutParams(dp(155), dp(220)).apply {
+            LinearLayout.LayoutParams(dp(190), dp(270)).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
-                bottomMargin = dp(14)
+                topMargin = dp(12)
+                bottomMargin = dp(22)
             }
         )
 
         content.addView(heading(item.title))
         content.addView(description(item.subtitle))
+
         content.addView(card(
-            "Sinopse",
+            "SINOPSE",
             item.description.ifBlank { "Descrição não disponível." }
-        ))
+        ), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(14)
+        })
+
+        content.addView(card(
+            "SOBRE ESTE TÍTULO",
+            "Categoria: ${item.category}\n\n" +
+            "Fonte de informação: ${if (item.category == "Anime") "AniList" else "TVmaze"}"
+        ), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(12)
+        })
+
         content.addView(description(
-            "Informações fornecidas por ${if (item.category == "Anime") "AniList" else "TVmaze"}. " +
-            "Esta fonte apresenta metadados e não fornece, por si só, autorização para reprodução."
-        ))
+            "Os dados apresentados são informativos. A fonte não concede, por si só, autorização para reprodução."
+        ).apply {
+            setPadding(dp(2), dp(14), dp(2), dp(8))
+        })
+
         content.addView(button("CONSULTAR FONTE ORIGINAL  ↗") {
             startActivity(Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse(item.sourceUrl)
             ))
         }, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(10)
+            topMargin = dp(12)
         })
     }
 
@@ -1124,19 +1142,22 @@ class MainActivity : Activity() {
             setOnClickListener { showPage("Explorar") }
         })
 
-        content.addView(smallLabel("AIZEN TV • DETALHES"))
+        content.addView(smallLabel("AIZEN TV  •  FILME"))
+
         val detailCover = android.widget.ImageView(this).apply {
             scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-            background = rounded(panel, 14)
+            background = rounded(panel, 18)
             contentDescription = "Capa de ${item.title}"
+            elevation = dp(5).toFloat()
         }
 
         loadCover(item.identifier, detailCover)
 
         content.addView(detailCover,
-            LinearLayout.LayoutParams(dp(150), dp(215)).apply {
+            LinearLayout.LayoutParams(dp(190), dp(270)).apply {
                 gravity = Gravity.CENTER_HORIZONTAL
-                bottomMargin = dp(16)
+                topMargin = dp(12)
+                bottomMargin = dp(22)
             }
         )
 
@@ -1146,11 +1167,21 @@ class MainActivity : Activity() {
         ))
 
         content.addView(card(
-            "Sobre este conteúdo",
-            "Autor: ${item.creator}\n" +
-            "Duração declarada: ${item.durationLabel}\n" +
-            "Licença declarada: ${item.licenseLabel}"
-        ))
+            "INFORMAÇÕES DO FILME",
+            "Ano: ${item.year}\n\n" +
+            "Duração declarada: ${item.durationLabel}\n\n" +
+            "Autor: ${item.creator}"
+        ), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(14)
+        })
+
+        content.addView(card(
+            "LICENÇA E DISPONIBILIDADE",
+            "Licença declarada: ${item.licenseLabel}\n\n" +
+            "A licença indicada pela fonte deve ser verificada antes de qualquer utilização ou reprodução."
+        ), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(12)
+        })
 
         LibraryStore.saveMedia(this, SavedMedia(
             mediaId = item.identifier,
@@ -1162,6 +1193,7 @@ class MainActivity : Activity() {
         ))
 
         val favorite = LibraryStore.isFavorite(this, item.identifier)
+
         content.addView(button(
             if (favorite) "✓  REMOVER DOS FAVORITOS"
             else "＋  ADICIONAR À MINHA LISTA"
@@ -1173,14 +1205,8 @@ class MainActivity : Activity() {
             }
             buildMovieDetails(item)
         }, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(15)
+            topMargin = dp(18)
         })
-
-        content.addView(heading("Fonte e disponibilidade"))
-        content.addView(description(
-            "A fonte declara esta licença, mas os direitos e a disponibilidade " +
-            "da reprodução devem ser confirmados antes de integrar o vídeo."
-        ))
 
         content.addView(button("▶  REPRODUZIR CONTEÚDO") {
             CatalogRepository.resolvePlayableVideo(item) { result ->
@@ -1205,7 +1231,7 @@ class MainActivity : Activity() {
                 )
             }
         }, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(18)
+            topMargin = dp(12)
         })
 
         content.addView(button("CONSULTAR FONTE ORIGINAL  ↗") {
@@ -1214,7 +1240,8 @@ class MainActivity : Activity() {
                 Uri.parse(item.sourceUrl)
             ))
         }, LinearLayout.LayoutParams(-1, -2).apply {
-            topMargin = dp(8)
+            topMargin = dp(10)
+            bottomMargin = dp(20)
         })
     }
 
