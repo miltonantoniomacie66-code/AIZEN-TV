@@ -5,12 +5,14 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.util.Log
 import android.text.InputType
 import android.view.Gravity
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.credentials.CredentialManager
 import androidx.credentials.CredentialManagerCallback
 import androidx.credentials.CustomCredential
@@ -172,6 +174,7 @@ class AuthActivity : Activity() {
 
     private fun showMessage(message: String) {
         status.text = message
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
     private fun email(): String =
@@ -193,20 +196,31 @@ class AuthActivity : Activity() {
     }
 
     private fun register() {
+        showMessage("A validar os dados da conta...")
         if (!validInput()) return
+
+        showMessage("A enviar pedido de criação ao Firebase...")
 
         auth.createUserWithEmailAndPassword(email(), password())
             .addOnSuccessListener {
-                auth.currentUser?.sendEmailVerification()
-                    ?.addOnSuccessListener {
-                        showMessage("Conta criada. Confirma o email antes de entrar.")
+                val user = auth.currentUser
+                if (user == null) {
+                    showMessage("Conta criada, mas não foi possível identificar o utilizador.")
+                    return@addOnSuccessListener
+                }
+
+                user.sendEmailVerification()
+                    .addOnSuccessListener {
+                        showMessage("Conta criada! Confirma o email antes de entrar.")
                     }
-                    ?.addOnFailureListener {
-                        showMessage("Conta criada, mas não foi possível enviar a confirmação.")
+                    .addOnFailureListener { error ->
+                        Log.e("AIZEN_AUTH", "Falha ao enviar confirmação", error)
+                        showMessage("Conta criada, mas falhou o envio do email: ${error.localizedMessage}")
                     }
             }
-            .addOnFailureListener {
-                showMessage(it.localizedMessage ?: "Não foi possível criar a conta.")
+            .addOnFailureListener { error ->
+                Log.e("AIZEN_AUTH", "Falha ao criar conta", error)
+                showMessage("Erro ao criar conta: ${error.localizedMessage ?: error.javaClass.simpleName}")
             }
     }
 
@@ -316,8 +330,9 @@ class AuthActivity : Activity() {
 
                             auth.signInWithCredential(firebaseCredential)
                                 .addOnSuccessListener { finishLogin() }
-                                .addOnFailureListener {
-                                    showMessage("Não foi possível autenticar com Google.")
+                                .addOnFailureListener { error ->
+                                    Log.e("AIZEN_AUTH", "Falha no Firebase Google", error)
+                                    showMessage("Erro Google: ${error.localizedMessage ?: error.javaClass.simpleName}")
                                 }
                         } catch (_: GoogleIdTokenParsingException) {
                             showMessage("Não foi possível ler a conta Google.")
