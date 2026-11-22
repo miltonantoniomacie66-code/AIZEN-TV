@@ -185,10 +185,7 @@ class MainActivity : Activity() {
         when (page) {
             "Início" -> buildHome()
             "Explorar" -> buildExplore()
-            "Ao Vivo" -> buildPlaceholder(
-                "Ao Vivo",
-                "Uma área para transmissões de canais e eventos com fontes autorizadas."
-            )
+            "Ao Vivo" -> buildLive()
             "Downloads" -> buildPlaceholder(
                 "Os meus downloads",
                 "Aqui ficarão os conteúdos autorizados para guardar e assistir offline."
@@ -1186,6 +1183,49 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(-1, -2).apply {
             topMargin = dp(8)
         })
+    }
+
+    private fun buildLive() {
+        content.addView(smallLabel("TRANSMISSÕES OFICIAIS"))
+        content.addView(heading("Ao Vivo"))
+        content.addView(description(
+            "Acompanha emissões de canais através das plataformas oficiais."
+        ))
+
+        content.addView(card(
+            "TVM — Televisão de Moçambique",
+            "Acede à emissão da TVM e da TVM Internacional no portal oficial."
+        ))
+
+        content.addView(button("ABRIR TVM OFICIAL  ↗") {
+            startActivity(Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://online.tvm.co.mz/")
+            ))
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(8)
+        })
+
+        content.addView(card(
+            "MBC — Mozambique Broadcasting Company",
+            "Consulta a emissão ao vivo e a programação disponibilizada pela MBC."
+        ), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(18)
+        })
+
+        content.addView(button("ABRIR MBC AO VIVO  ↗") {
+            startActivity(Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://mbc.co.mz/tv-ao-vivo/")
+            ))
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(8)
+        })
+
+        content.addView(description(
+            "As transmissões são abertas nas plataformas oficiais. " +
+            "A disponibilidade depende de cada emissora."
+        ))
     }
 
     private fun buildPlaceholder(title: String, subtitle: String) {
