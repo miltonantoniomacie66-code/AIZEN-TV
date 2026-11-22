@@ -12,7 +12,20 @@
           "package_name": "com.aizentv.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "774809238188-ri43h6ftg0l7vir6efo9mt5ene5vpjbo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aizentv.app",
+            "certificate_hash": "b498eafacb04cea703f3f97b39d76771314f1b8e"
+          }
+        },
+        {
+          "client_id": "774809238188-s6hpi3qnfp6k29ou6gnqobunp8n450h7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA2CkS0AxgKGL68u3kCDRALB3KqKWSZatQ"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "774809238188-s6hpi3qnfp6k29ou6gnqobunp8n450h7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
