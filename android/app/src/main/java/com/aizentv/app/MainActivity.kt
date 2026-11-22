@@ -590,8 +590,8 @@ class MainActivity : Activity() {
             textSize = 14f
             setSingleLine(true)
             imeOptions = EditorInfo.IME_ACTION_SEARCH
-            setPadding(dp(15), dp(13), dp(15), dp(13))
-            background = rounded(panel, 14)
+            setPadding(dp(10), dp(13), dp(12), dp(13))
+            background = android.graphics.drawable.ColorDrawable(Color.TRANSPARENT)
         }
         content.addView(search)
 
@@ -655,6 +655,7 @@ class MainActivity : Activity() {
                                 gravity = Gravity.CENTER_VERTICAL
                                 background = rounded(panel, 16)
                                 setPadding(dp(11), dp(11), dp(11), dp(11))
+                                elevation = dp(2).toFloat()
                                 addView(cover,
                                     LinearLayout.LayoutParams(dp(94), dp(132))
                                 )
@@ -771,6 +772,7 @@ class MainActivity : Activity() {
                     18
                 )
                 view.setTextColor(if (selected) white else muted)
+                view.elevation = if (selected) dp(3).toFloat() else 0f
             }
         }
 
@@ -782,8 +784,9 @@ class MainActivity : Activity() {
                 true
             ).apply {
                 gravity = Gravity.CENTER
-                setPadding(dp(16), dp(11), dp(16), dp(11))
+                setPadding(dp(18), dp(12), dp(18), dp(12))
                 background = rounded(panel, 18)
+                elevation = dp(1).toFloat()
                 setOnClickListener {
                     selectedCategory = category
                     updateCategoryButtons()
@@ -818,11 +821,23 @@ class MainActivity : Activity() {
             background = rounded(panel, 14)
         }
 
-        content.addView(search,
+        val searchBox = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = rounded(panel, 16)
+            setPadding(dp(13), 0, dp(8), 0)
+            addView(text("⌕", 25f, purple, true))
+            addView(search, LinearLayout.LayoutParams(0, -2, 1f))
+            elevation = dp(2).toFloat()
+        }
+
+        content.addView(searchBox,
             LinearLayout.LayoutParams(-1, -2).apply {
-                topMargin = dp(14)
+                topMargin = dp(16)
             }
         )
+
+        content.addView(smallLabel("FILTRAR POR ANO"))
 
         val year = EditText(this).apply {
             hint = "Filtrar por ano (ex.: 2020)"
@@ -831,8 +846,9 @@ class MainActivity : Activity() {
             textSize = 13f
             setSingleLine(true)
             inputType = android.text.InputType.TYPE_CLASS_NUMBER
-            setPadding(dp(15), dp(12), dp(15), dp(12))
-            background = rounded(panel, 14)
+            filters = arrayOf(android.text.InputFilter.LengthFilter(4))
+            setPadding(dp(15), dp(13), dp(15), dp(13))
+            background = rounded(panel2, 14)
         }
 
         content.addView(year,
