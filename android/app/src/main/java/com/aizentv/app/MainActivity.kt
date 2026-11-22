@@ -15,6 +15,7 @@ import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : Activity() {
 
@@ -35,6 +36,11 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = bg
         window.navigationBarColor = bg
+        if (FirebaseAuth.getInstance().currentUser?.isEmailVerified != true) {
+            startActivity(Intent(this, AuthActivity::class.java))
+            finish()
+            return
+        }
         showHome()
     }
 
@@ -1160,6 +1166,18 @@ class MainActivity : Activity() {
         content.addView(smallLabel("AIZEN TV"))
         content.addView(heading(title))
         content.addView(description(subtitle))
+
+        if (title == "O teu perfil") {
+            val user = FirebaseAuth.getInstance().currentUser
+            content.addView(card("Conta autenticada", user?.email ?: "Conta ativa"))
+            content.addView(button("TERMINAR SESSÃO") {
+                FirebaseAuth.getInstance().signOut()
+                startActivity(Intent(this, AuthActivity::class.java))
+                finish()
+            }, LinearLayout.LayoutParams(-1, -2).apply {
+                topMargin = dp(12)
+            })
+        }
 
         content.addView(card(
             "Em desenvolvimento",

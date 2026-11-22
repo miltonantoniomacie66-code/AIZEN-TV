@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "774809238188",
+    "project_id": "aizen-tv-moz",
+    "storage_bucket": "aizen-tv-moz.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:774809238188:android:7aef91cd2f8bd1756b3d09",
+        "android_client_info": {
+          "package_name": "com.aizentv.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2CkS0AxgKGL68u3kCDRALB3KqKWSZatQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

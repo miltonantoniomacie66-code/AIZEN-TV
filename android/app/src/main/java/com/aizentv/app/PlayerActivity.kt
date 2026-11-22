@@ -13,6 +13,7 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.PlayerView
+import com.google.firebase.auth.FirebaseAuth
 
 class PlayerActivity : Activity() {
 
@@ -22,6 +23,13 @@ class PlayerActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (FirebaseAuth.getInstance().currentUser?.isEmailVerified != true) {
+            startActivity(Intent(this, AuthActivity::class.java))
+            finish()
+            return
+        }
+
         mediaId = intent.getStringExtra(EXTRA_MEDIA_ID)
 
         val mediaUrl = intent.getStringExtra(EXTRA_MEDIA_URL)
