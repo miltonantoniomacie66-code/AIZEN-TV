@@ -93,6 +93,9 @@ class AuthActivity : Activity() {
 
         panel.addView(actionButton("ENTRAR") { signIn() }, params(0, 54))
         panel.addView(actionButton("CRIAR CONTA") { register() }, params(0, 54))
+        panel.addView(secondaryAction("Reenviar email de confirmação") {
+            resendEmailVerification()
+        }, params(0, 30))
         panel.addView(secondaryAction("Já confirmei o email") {
             refreshEmailVerification()
         }, params(0, 30))
@@ -261,6 +264,32 @@ class AuthActivity : Activity() {
             }
     }
 
+    private fun resendEmailVerification() {
+        val user = auth.currentUser
+
+        if (user == null) {
+            showMessage("Primeiro entra com a conta existente.")
+            return
+        }
+
+        if (user.isEmailVerified) {
+            openCatalog()
+            return
+        }
+
+        showMessage("A solicitar novo email de confirmação...")
+        auth.setLanguageCode("pt")
+
+        user.sendEmailVerification()
+            .addOnSuccessListener {
+                showMessage("Pedido enviado. Verifica a caixa de entrada e o spam.")
+            }
+            .addOnFailureListener { error ->
+                Log.e("AIZEN_AUTH", "Falha ao reenviar confirmação", error)
+                showMessage("Falha no reenvio: ${error.localizedMessage ?: error.javaClass.simpleName}")
+            }
+    }
+
     private fun refreshEmailVerification() {
         val user = auth.currentUser
 
@@ -290,7 +319,7 @@ class AuthActivity : Activity() {
         if (user?.isEmailVerified == true) {
             openCatalog()
         } else if (user != null) {
-            showMessage("Confirma o teu email e depois toca em JÁ CONFIRMEI O EMAIL.")
+            showMessage("Conta encontrada. Toca em Reenviar email de confirmação.")
         } else {
             showMessage("Não foi possível identificar a conta.")
         }
@@ -355,7 +384,12 @@ class AuthActivity : Activity() {
                 }
 
                 override fun onError(e: GetCredentialException) {
-                    showMessage("A autenticação Google foi cancelada ou falhou.")
+                    android.util.Log.e(
+                        "AIZEN_AUTH",
+                        "Google Credential Manager: ${e.javaClass.simpleName}: ${e.message}",
+                        e
+                    )
+                    showMessage("Erro Google: ${e.javaClass.simpleName} - ${e.message ?: "sem detalhes"}")
                 }
             }
 
