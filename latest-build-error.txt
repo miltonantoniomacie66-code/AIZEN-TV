@@ -1,9 +1,10 @@
 AIZEN TV - Diagnóstico da compilação
-Commit: 95b6322da0b520430b5f25f2fa5a45bf7e9c8e98
-Execução: 44918091095
+Commit: a7c510144a8e55af69ef04a8f4d49cc084e5674c
+Execução: 44993621107
 
 ===== ERROS KOTLIN =====
-39:e: file:///home/runner/work/AIZEN-TV/AIZEN-TV/android/app/src/main/java/com/aizentv/app/MainActivity.kt:425:13 Unresolved reference 'singleLine'.
+47:e: file:///home/runner/.gradle/caches/8.13/transforms/d323864f2f43f4f560e3674003ad2d5a/transformed/firebase-auth-25.0.0-api.jar!/META-INF/java.com.google.android.gmscore.integ.client.firebase-auth-api_firebase-auth-api.kotlin_module Module was compiled with an incompatible version of Kotlin. The binary version of its metadata is 2.4.0, expected version is 2.2.0.
+48:e: file:///home/runner/work/AIZEN-TV/AIZEN-TV/android/app/src/main/java/com/aizentv/app/PlayerActivity.kt:28:27 Unresolved reference 'Intent'.
 
 ===== FINAL DO LOG =====
 Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
@@ -39,5 +40,5 @@ Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilat
 	... 2 more
 
 
-BUILD FAILED in 25s
-28 actionable tasks: 28 executed
+BUILD FAILED in 1m 33s
+31 actionable tasks: 31 executed
