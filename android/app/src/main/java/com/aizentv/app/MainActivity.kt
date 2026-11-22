@@ -187,10 +187,7 @@ class MainActivity : Activity() {
             "Explorar" -> buildExplore()
             "Ao Vivo" -> buildLive()
             "Downloads" -> buildDownloads()
-            "Perfil" -> buildPlaceholder(
-                "O teu perfil",
-                "A tua conta, preferências e definições do AIZEN TV."
-            )
+            "Perfil" -> buildProfile()
         }
 
         buildNavigation(page)
@@ -1223,6 +1220,122 @@ class MainActivity : Activity() {
             "As transmissões são abertas nas plataformas oficiais. " +
             "A disponibilidade depende de cada emissora."
         ))
+    }
+
+
+    private fun buildProfile() {
+        val auth = FirebaseAuth.getInstance()
+        val user = auth.currentUser
+
+        content.addView(smallLabel("AIZEN TV"))
+        content.addView(heading("O teu perfil"))
+        content.addView(description(
+            "Gere a tua conta e as definições de segurança."
+        ))
+
+        val email = user?.email ?: "Email não disponível"
+        val verified = user?.isEmailVerified == true
+
+        content.addView(card(
+            "A MINHA CONTA",
+            email
+        ))
+
+        content.addView(card(
+            "VERIFICAÇÃO DO EMAIL",
+            if (verified) {
+                "Email confirmado. A tua conta está verificada."
+            } else {
+                "O email ainda não está confirmado. Verifica a tua caixa de entrada."
+            }
+        ), LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(10)
+        })
+
+        content.addView(button("ATUALIZAR ESTADO DO EMAIL") {
+            val currentUser = auth.currentUser
+            if (currentUser == null) {
+                startActivity(Intent(this, AuthActivity::class.java))
+                finish()
+            } else {
+                currentUser.reload().addOnCompleteListener { result ->
+                    if (result.isSuccessful) {
+                        showPage("Perfil")
+                    } else {
+                        android.widget.Toast.makeText(
+                            this,
+                            "Não foi possível atualizar o estado da conta.",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(10)
+        })
+
+        content.addView(heading("SEGURANÇA"))
+
+        content.addView(button("RECUPERAR PALAVRA-PASSE") {
+            val accountEmail = auth.currentUser?.email
+            if (accountEmail.isNullOrBlank()) {
+                android.widget.Toast.makeText(
+                    this,
+                    "Não existe um email associado à conta.",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                android.app.AlertDialog.Builder(this)
+                    .setTitle("Recuperar palavra-passe")
+                    .setMessage("Enviar instruções de recuperação para $accountEmail?")
+                    .setNegativeButton("CANCELAR", null)
+                    .setPositiveButton("ENVIAR") { _, _ ->
+                        auth.sendPasswordResetEmail(accountEmail)
+                            .addOnSuccessListener {
+                                android.widget.Toast.makeText(
+                                    this,
+                                    "Email de recuperação enviado.",
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            }
+                            .addOnFailureListener {
+                                android.widget.Toast.makeText(
+                                    this,
+                                    it.localizedMessage ?: "Não foi possível enviar o email.",
+                                    android.widget.Toast.LENGTH_LONG
+                                ).show()
+                            }
+                    }
+                    .show()
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(8)
+        })
+
+        content.addView(heading("APLICAÇÃO"))
+
+        val version = packageManager
+            .getPackageInfo(packageName, 0).versionName ?: "1.0"
+
+        content.addView(card(
+            "AIZEN TV",
+            "Versão $version\\nPlataforma de entretenimento."
+        ))
+
+        content.addView(button("TERMINAR SESSÃO") {
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Terminar sessão?")
+                .setMessage("Queres sair da tua conta AIZEN TV neste dispositivo?")
+                .setNegativeButton("CANCELAR", null)
+                .setPositiveButton("SAIR") { _, _ ->
+                    auth.signOut()
+                    startActivity(Intent(this, AuthActivity::class.java))
+                    finish()
+                }
+                .show()
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(18)
+        })
     }
 
     private fun buildPlaceholder(title: String, subtitle: String) {
