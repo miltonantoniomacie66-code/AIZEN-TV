@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.Toast
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -68,9 +69,19 @@ class PlayerActivity : Activity() {
             }
         )
 
+        val subtitleLanguage = AizenPreferences.subtitleLanguage(this)
+
         val trackSelector = DefaultTrackSelector(this).apply {
             parameters = buildUponParameters()
-                .setPreferredTextLanguages("pt", "en")
+                .setTrackTypeDisabled(
+                    C.TRACK_TYPE_TEXT,
+                    subtitleLanguage == "off"
+                )
+                .apply {
+                    if (subtitleLanguage != "off") {
+                        setPreferredTextLanguages(subtitleLanguage)
+                    }
+                }
                 .build()
         }
 

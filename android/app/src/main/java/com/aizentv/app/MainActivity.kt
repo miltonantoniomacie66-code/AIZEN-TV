@@ -1312,6 +1312,55 @@ class MainActivity : Activity() {
             topMargin = dp(8)
         })
 
+        content.addView(heading("PREFERÊNCIAS"))
+
+        val subtitleLanguage = AizenPreferences.subtitleLanguage(this)
+        val subtitleLabel = when (subtitleLanguage) {
+            "en" -> "Inglês"
+            "off" -> "Desativadas"
+            else -> "Português"
+        }
+
+        content.addView(card(
+            "IDIOMA DAS LEGENDAS",
+            subtitleLabel
+        ))
+
+        content.addView(button("ALTERAR LEGENDAS") {
+            val options = arrayOf(
+                "Português",
+                "Inglês",
+                "Desativadas"
+            )
+            val current = when (AizenPreferences.subtitleLanguage(this)) {
+                "en" -> 1
+                "off" -> 2
+                else -> 0
+            }
+
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Idioma das legendas")
+                .setSingleChoiceItems(options, current) { dialog, which ->
+                    val language = when (which) {
+                        1 -> "en"
+                        2 -> "off"
+                        else -> "pt"
+                    }
+                    AizenPreferences.setSubtitleLanguage(this, language)
+                    dialog.dismiss()
+                    showPage("Perfil")
+                    android.widget.Toast.makeText(
+                        this,
+                        "Preferência de legendas guardada.",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+                .setNegativeButton("FECHAR", null)
+                .show()
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(8)
+        })
+
         content.addView(heading("APLICAÇÃO"))
 
         val version = packageManager
