@@ -113,6 +113,8 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(16), dp(16), dp(16), dp(16))
             background = rounded(panel, 17)
+            elevation = dp(3).toFloat()
+            clipToOutline = true
             addView(text(title, 15f, white, true))
             addView(text(subtitle, 12f, muted).apply {
                 setPadding(0, dp(6), 0, 0)
@@ -221,16 +223,27 @@ class MainActivity : Activity() {
             setPadding(dp(21), dp(23), dp(21), dp(21))
             background = gradient(
                 intArrayOf(
-                    Color.rgb(70, 28, 120),
-                    Color.rgb(35, 23, 61),
+                    Color.rgb(91, 38, 153),
+                    Color.rgb(48, 28, 78),
                     Color.rgb(20, 19, 29)
                 )
             )
+            elevation = dp(8).toFloat()
+            clipToOutline = true
+            minimumHeight = dp(205)
         }
 
         hero.addView(
+            text("AIZEN TV  •  O TEU UNIVERSO",
+                10f, Color.rgb(222, 194, 255), true).apply {
+                letterSpacing = 0.12f
+                setPadding(0, 0, 0, dp(15))
+            }
+        )
+
+        hero.addView(
             text("A TUA PRÓXIMA\nHISTÓRIA COMEÇA AQUI",
-                25f, white, true).apply {
+                27f, white, true).apply {
                 setLineSpacing(dp(3).toFloat(), 1f)
             }
         )
@@ -247,6 +260,13 @@ class MainActivity : Activity() {
         })
 
         content.addView(hero)
+        hero.alpha = 0f
+        hero.translationY = dp(12).toFloat()
+        hero.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(380)
+            .start()
 
         val searchShortcut = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -345,6 +365,8 @@ class MainActivity : Activity() {
             gravity = Gravity.BOTTOM
             setPadding(dp(14), dp(14), dp(14), dp(14))
             background = gradient(colors, 17)
+            elevation = dp(4).toFloat()
+            clipToOutline = true
             addView(text("✦", 25f, white, true))
             addView(text(title, 13f, white, true).apply {
                 setPadding(0, dp(15), 0, dp(3))
