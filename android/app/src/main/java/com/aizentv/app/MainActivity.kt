@@ -186,10 +186,7 @@ class MainActivity : Activity() {
             "Início" -> buildHome()
             "Explorar" -> buildExplore()
             "Ao Vivo" -> buildLive()
-            "Downloads" -> buildPlaceholder(
-                "Os meus downloads",
-                "Aqui ficarão os conteúdos autorizados para guardar e assistir offline."
-            )
+            "Downloads" -> buildDownloads()
             "Perfil" -> buildPlaceholder(
                 "O teu perfil",
                 "A tua conta, preferências e definições do AIZEN TV."
@@ -1249,6 +1246,96 @@ class MainActivity : Activity() {
             "Em desenvolvimento",
             "Esta secção será ligada às funcionalidades correspondentes nas próximas etapas."
         ))
+    }
+
+
+    private fun buildDownloads() {
+        content.addView(smallLabel("AIZEN TV"))
+        content.addView(heading("Os meus downloads"))
+        content.addView(description(
+            "Os teus conteúdos guardados para assistir offline."
+        ))
+
+        val folder = java.io.File(filesDir, "downloads")
+        if (!folder.exists()) folder.mkdirs()
+
+        val extensions = setOf("mp4", "mkv", "webm")
+        val files = folder.listFiles()
+            ?.filter { it.isFile && it.extension.lowercase() in extensions }
+            ?.sortedByDescending { it.lastModified() }
+            ?: emptyList()
+
+        val totalBytes = files.sumOf { it.length() }
+
+        content.addView(card(
+            "Armazenamento offline",
+            "${files.size} ficheiro(s) guardado(s) • ${formatDownloadSize(totalBytes)}"
+        ))
+
+        if (files.isEmpty()) {
+            content.addView(card(
+                "Ainda sem downloads",
+                "Quando existirem conteúdos autorizados guardados neste dispositivo, aparecerão aqui."
+            ))
+            return
+        }
+
+        files.forEach { file ->
+            val item = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(15), dp(14), dp(15), dp(14))
+                background = rounded(panel, 18)
+            }
+
+            val details = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(text(file.name, 13f, white, true))
+                addView(text(formatDownloadSize(file.length()), 11f, muted))
+            }
+
+            item.addView(details, LinearLayout.LayoutParams(0, -2, 1f))
+
+            val remove = text("REMOVER", 10f, purple, true).apply {
+                setPadding(dp(10), dp(12), 0, dp(12))
+                setOnClickListener {
+                    android.app.AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Remover download?")
+                        .setMessage("Queres apagar ${file.name} deste dispositivo?")
+                        .setNegativeButton("CANCELAR", null)
+                        .setPositiveButton("REMOVER") { _, _ ->
+                            if (file.delete()) {
+                                showPage("Downloads")
+                            } else {
+                                android.widget.Toast.makeText(
+                                    this@MainActivity,
+                                    "Não foi possível remover o ficheiro.",
+                                    android.widget.Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                        .show()
+                }
+            }
+
+            item.addView(remove)
+            content.addView(
+                item,
+                LinearLayout.LayoutParams(-1, -2).apply {
+                    bottomMargin = dp(10)
+                }
+            )
+        }
+    }
+
+    private fun formatDownloadSize(bytes: Long): String = when {
+        bytes < 1024 -> "$bytes B"
+        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
+        else -> String.format(
+            java.util.Locale.getDefault(),
+            "%.1f MB",
+            bytes / (1024.0 * 1024.0)
+        )
     }
 
     private fun buildNavigation(page: String) {
