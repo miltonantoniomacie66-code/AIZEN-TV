@@ -1152,6 +1152,32 @@ class MainActivity : Activity() {
             "da reprodução devem ser confirmados antes de integrar o vídeo."
         ))
 
+        content.addView(button("▶  REPRODUZIR CONTEÚDO") {
+            CatalogRepository.resolvePlayableVideo(item) { result ->
+                result.fold(
+                    onSuccess = { videoUrl ->
+                        startActivity(Intent(
+                            this,
+                            PlayerActivity::class.java
+                        ).apply {
+                            putExtra(PlayerActivity.EXTRA_MEDIA_URL, videoUrl)
+                            putExtra(PlayerActivity.EXTRA_MEDIA_ID, item.identifier)
+                            putExtra(PlayerActivity.EXTRA_TITLE, item.title)
+                        })
+                    },
+                    onFailure = { error ->
+                        android.widget.Toast.makeText(
+                            this,
+                            error.message ?: "Conteúdo indisponível para reprodução.",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
+                    }
+                )
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(18)
+        })
+
         content.addView(button("CONSULTAR FONTE ORIGINAL  ↗") {
             startActivity(Intent(
                 Intent.ACTION_VIEW,

@@ -40,6 +40,99 @@ object CatalogRepository {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    // Só adicionar identificadores depois de confirmar os direitos de reprodução.
+    private val authorizedIdentifiers: Set<String> = emptySet()
+
+    fun resolvePlayableVideo(
+        item: CatalogItem,
+        callback: (Result<String>) -> Unit
+    ) {
+        if (item.identifier !in authorizedIdentifiers) {
+            mainHandler.post {
+                callback(Result.failure(
+                    IllegalStateException("Conteúdo ainda não aprovado para reprodução.")
+                ))
+            }
+            return
+        }
+
+        Thread {
+            try {
+                val id = URLEncoder.encode(item.identifier, "UTF-8")
+                val connection = URL("https://archive.org/metadata/$id")
+                    .openConnection() as HttpURLConnection
+
+                connection.connectTimeout = 15000
+                connection.readTimeout = 20000
+                connection.requestMethod = "GET"
+
+                val response = try {
+                    if (connection.responseCode !in 200..299) {
+                        throw IllegalStateException("Não foi possível consultar a fonte.")
+                    }
+                    connection.inputStream.bufferedReader().use { it.readText() }
+                } finally {
+                    connection.disconnect()
+                }
+
+                val json = JSONObject(response)
+                val metadata = json.optJSONObject("metadata")
+                    ?: throw IllegalStateException("Metadados indisponíveis.")
+
+                if (metadata.optString("mediatype") != "movies") {
+                    throw IllegalStateException("O item não é um vídeo.")
+                }
+
+                val license = metadata.optString("licenseurl")
+                    .trim().lowercase().removeSuffix("/")
+
+                val allowedLicenses = setOf(
+                    "https://creativecommons.org/publicdomain/zero/1.0",
+                    "https://creativecommons.org/licenses/by/4.0",
+                    "https://creativecommons.org/licenses/by-sa/4.0"
+                )
+
+                if (license !in allowedLicenses) {
+                    throw IllegalStateException("Licença declarada não reconhecida.")
+                }
+
+                val files = json.optJSONArray("files")
+                    ?: throw IllegalStateException("Lista de ficheiros indisponível.")
+
+                val candidates = mutableListOf<Pair<Int, String>>()
+
+                for (i in 0 until files.length()) {
+                    val entry = files.optJSONObject(i) ?: continue
+                    val name = entry.optString("name")
+                    val lower = name.lowercase()
+
+                    if (lower.endsWith(".mp4")) {
+                        candidates.add(0 to name)
+                    } else if (lower.endsWith(".m3u8")) {
+                        candidates.add(1 to name)
+                    }
+                }
+
+                val selected = candidates.minByOrNull { it.first }?.second
+                    ?: throw IllegalStateException("Nenhum vídeo compatível encontrado.")
+
+                val encodedName = selected.split("/")
+                    .joinToString("/") {
+                        URLEncoder.encode(it, "UTF-8").replace("+", "%20")
+                    }
+
+                val videoUrl =
+                    "https://archive.org/download/$id/$encodedName"
+
+                mainHandler.post { callback(Result.success(videoUrl)) }
+
+            } catch (error: Exception) {
+                mainHandler.post { callback(Result.failure(error)) }
+            }
+        }.start()
+    }
+
+
     private fun readValue(value: Any?): String {
         return when (value) {
             is JSONArray -> value.optString(0, "")
