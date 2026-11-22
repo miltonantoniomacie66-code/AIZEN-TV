@@ -86,6 +86,9 @@ class AuthActivity : Activity() {
 
         panel.addView(actionButton("ENTRAR") { signIn() }, params(0, 54))
         panel.addView(actionButton("CRIAR CONTA") { register() }, params(0, 54))
+        panel.addView(actionButton("JÁ CONFIRMEI O EMAIL") {
+            refreshEmailVerification()
+        }, params(0, 48))
         panel.addView(actionButton("RECUPERAR PALAVRA-PASSE") {
             resetPassword()
         }, params(0, 48))
@@ -227,14 +230,38 @@ class AuthActivity : Activity() {
             }
     }
 
+    private fun refreshEmailVerification() {
+        val user = auth.currentUser
+
+        if (user == null) {
+            showMessage("Entra primeiro com o teu email e palavra-passe.")
+            return
+        }
+
+        showMessage("A verificar a confirmação do email...")
+
+        user.reload()
+            .addOnSuccessListener {
+                if (auth.currentUser?.isEmailVerified == true) {
+                    openCatalog()
+                } else {
+                    showMessage("Email ainda não confirmado. Verifica a tua caixa de entrada.")
+                }
+            }
+            .addOnFailureListener {
+                showMessage("Não foi possível atualizar o estado da conta. Tenta novamente.")
+            }
+    }
+
     private fun finishLogin() {
         val user = auth.currentUser
 
         if (user?.isEmailVerified == true) {
             openCatalog()
+        } else if (user != null) {
+            showMessage("Confirma o teu email e depois toca em JÁ CONFIRMEI O EMAIL.")
         } else {
-            user?.sendEmailVerification()
-            showMessage("Confirma o teu endereço de email para entrar no AIZEN TV.")
+            showMessage("Não foi possível identificar a conta.")
         }
     }
 
