@@ -19,13 +19,13 @@ import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : Activity() {
 
-    private val bg = Color.rgb(8, 8, 13)
-    private val panel = Color.rgb(22, 20, 31)
-    private val panel2 = Color.rgb(31, 27, 43)
+    private var bg = Color.rgb(8, 8, 13)
+    private var panel = Color.rgb(22, 20, 31)
+    private var panel2 = Color.rgb(31, 27, 43)
     private val purple = Color.rgb(168, 85, 247)
     private val purpleDark = Color.rgb(91, 33, 182)
-    private val white = Color.WHITE
-    private val muted = Color.rgb(164, 160, 178)
+    private var white = Color.WHITE
+    private var muted = Color.rgb(164, 160, 178)
     private val green = Color.rgb(65, 190, 140)
 
     private lateinit var content: LinearLayout
@@ -34,6 +34,7 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyAizenTheme()
         window.statusBarColor = bg
         window.navigationBarColor = bg
         if (FirebaseAuth.getInstance().currentUser?.isEmailVerified != true) {
@@ -1223,6 +1224,24 @@ class MainActivity : Activity() {
     }
 
 
+
+    private fun applyAizenTheme() {
+        val dark = AizenPreferences.isDark(this)
+        bg = if (dark) Color.rgb(8, 8, 13) else Color.rgb(246, 244, 250)
+        panel = if (dark) Color.rgb(22, 20, 31) else Color.rgb(255, 255, 255)
+        panel2 = if (dark) Color.rgb(31, 27, 43) else Color.rgb(235, 230, 243)
+        white = if (dark) Color.WHITE else Color.rgb(30, 25, 39)
+        muted = if (dark) Color.rgb(164, 160, 178) else Color.rgb(105, 96, 117)
+        window.statusBarColor = bg
+        window.navigationBarColor = bg
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            window.decorView.systemUiVisibility =
+                if (dark) 0 else
+                    android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or
+                    android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        }
+    }
+
     private fun buildProfile() {
         val auth = FirebaseAuth.getInstance()
         val user = auth.currentUser
@@ -1354,6 +1373,31 @@ class MainActivity : Activity() {
                         "Preferência de legendas guardada.",
                         android.widget.Toast.LENGTH_SHORT
                     ).show()
+                }
+                .setNegativeButton("FECHAR", null)
+                .show()
+        }, LinearLayout.LayoutParams(-1, -2).apply {
+            topMargin = dp(8)
+        })
+
+
+        val themeMode = AizenPreferences.themeMode(this)
+        content.addView(card(
+            "TEMA DA APLICAÇÃO",
+            if (themeMode == "auto") "Automático (segue o sistema)" else "Escuro"
+        ))
+        content.addView(button("ALTERAR TEMA") {
+            val options = arrayOf("Escuro", "Automático")
+            val selected = if (AizenPreferences.themeMode(this) == "auto") 1 else 0
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Tema da aplicação")
+                .setSingleChoiceItems(options, selected) { dialog, which ->
+                    AizenPreferences.setThemeMode(
+                        this,
+                        if (which == 1) "auto" else "dark"
+                    )
+                    dialog.dismiss()
+                    recreate()
                 }
                 .setNegativeButton("FECHAR", null)
                 .show()

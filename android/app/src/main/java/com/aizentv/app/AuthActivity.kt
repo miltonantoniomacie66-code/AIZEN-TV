@@ -33,13 +33,18 @@ class AuthActivity : Activity() {
     private lateinit var passwordInput: EditText
     private lateinit var status: TextView
 
-    private val bg = Color.rgb(8, 8, 13)
+    private var bg = Color.rgb(8, 8, 13)
     private val purple = Color.rgb(168, 85, 247)
-    private val white = Color.WHITE
-    private val muted = Color.rgb(164, 160, 178)
+    private var white = Color.WHITE
+    private var muted = Color.rgb(164, 160, 178)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val dark = AizenPreferences.isDark(this)
+        bg = if (dark) Color.rgb(8, 8, 13) else Color.rgb(246, 244, 250)
+        white = if (dark) Color.WHITE else Color.rgb(30, 25, 39)
+        muted = if (dark) Color.rgb(164, 160, 178) else Color.rgb(105, 96, 117)
 
         window.statusBarColor = bg
         window.navigationBarColor = bg

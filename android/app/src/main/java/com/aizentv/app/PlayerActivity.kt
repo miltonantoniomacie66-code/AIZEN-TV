@@ -1,5 +1,7 @@
 package com.aizentv.app
 
+import android.graphics.Color
+
 import android.content.Intent
 import android.app.Activity
 import android.net.Uri
@@ -25,6 +27,11 @@ class PlayerActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val darkTheme = AizenPreferences.isDark(this)
+        val barColor = if (darkTheme) Color.rgb(8, 8, 13) else Color.rgb(246, 244, 250)
+        window.statusBarColor = barColor
+        window.navigationBarColor = barColor
 
         if (FirebaseAuth.getInstance().currentUser?.isEmailVerified != true) {
             startActivity(Intent(this, AuthActivity::class.java))
