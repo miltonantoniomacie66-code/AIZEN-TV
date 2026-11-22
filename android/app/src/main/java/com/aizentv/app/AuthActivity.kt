@@ -93,12 +93,12 @@ class AuthActivity : Activity() {
 
         panel.addView(actionButton("ENTRAR") { signIn() }, params(0, 54))
         panel.addView(actionButton("CRIAR CONTA") { register() }, params(0, 54))
-        panel.addView(actionButton("JÁ CONFIRMEI O EMAIL") {
+        panel.addView(secondaryAction("Já confirmei o email") {
             refreshEmailVerification()
-        }, params(0, 48))
-        panel.addView(actionButton("RECUPERAR PALAVRA-PASSE") {
+        }, params(0, 30))
+        panel.addView(secondaryAction("Esqueci-me da palavra-passe") {
             resetPassword()
-        }, params(0, 48))
+        }, params(0, 30))
 
         panel.addView(label("OU CONTINUA COM", 11f, muted, true))
         panel.addView(actionButton("CONTINUAR COM GOOGLE") {
@@ -157,6 +157,18 @@ class AuthActivity : Activity() {
             setColor(purple)
             cornerRadius = dp(13).toFloat()
         }
+        setOnClickListener { action() }
+    }
+
+    private fun secondaryAction(
+        value: String,
+        action: () -> Unit
+    ) = TextView(this).apply {
+        text = value
+        textSize = 11f
+        setTextColor(muted)
+        gravity = Gravity.CENTER
+        setPadding(dp(8), dp(4), dp(8), dp(4))
         setOnClickListener { action() }
     }
 
@@ -261,10 +273,10 @@ class AuthActivity : Activity() {
 
         user.reload()
             .addOnSuccessListener {
-                if (auth.currentUser?.isEmailVerified == true) {
+                if (user.isEmailVerified) {
                     openCatalog()
                 } else {
-                    showMessage("Email ainda não confirmado. Verifica a tua caixa de entrada.")
+                    showMessage("Email ainda não confirmado. Abre o email de confirmação e tenta novamente.")
                 }
             }
             .addOnFailureListener {
